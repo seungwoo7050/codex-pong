@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { API_BASE_URL } from '../constants'
+import { useAuth } from '../features/auth/AuthProvider'
+import { apiFetch } from '../shared/api/client'
 
 interface GameResult {
   id: number
@@ -14,41 +15,50 @@ interface GameResult {
  * [페이지] frontend/src/pages/LobbyPage.tsx
  * 설명:
  *   - 테스트 경기를 생성하고 최근 결과를 확인하는 간단한 로비 화면이다.
- *   - v0.1.0에서는 인증 없이 입력 폼과 결과 목록만 제공한다.
- * 버전: v0.1.0
+ *   - v0.2.0에서는 인증 토큰을 사용해 보호된 API를 호출한다.
+ * 버전: v0.2.0
  * 관련 설계문서:
- *   - design/frontend/v0.1.0-core-layout-and-routing.md
+ *   - design/frontend/v0.2.0-auth-and-profile-ui.md
  * 변경 이력:
  *   - v0.1.0: 경기 생성/조회 UI 추가
+ *   - v0.2.0: 인증 연동 및 에러 메시지 추가
  */
 export function LobbyPage() {
+  const { token, user } = useAuth()
   const [playerA, setPlayerA] = useState('플레이어A')
   const [playerB, setPlayerB] = useState('플레이어B')
   const [scoreA, setScoreA] = useState(5)
   const [scoreB, setScoreB] = useState(3)
   const [results, setResults] = useState<GameResult[]>([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const loadResults = async () => {
-    const response = await fetch(`${API_BASE_URL}/api/games`)
-    const data = await response.json()
-    setResults(data)
+    if (!token) return
+    try {
+      const data = await apiFetch<GameResult[]>('/api/games', { method: 'GET' }, token)
+      setResults(data)
+    } catch (err) {
+      setError('최근 경기 결과를 불러오지 못했습니다.')
+    }
   }
 
   useEffect(() => {
     loadResults()
-  }, [])
+  }, [token])
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLoading(true)
+    setError('')
     try {
-      await fetch(`${API_BASE_URL}/api/games`, {
+      await apiFetch('/api/games', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerA, playerB, scoreA, scoreB }),
-      })
+      }, token)
       await loadResults()
+    } catch (err) {
+      setError('경기 저장에 실패했습니다.')
     } finally {
       setLoading(false)
     }
@@ -58,7 +68,7 @@ export function LobbyPage() {
     <main className="page">
       <section className="panel">
         <h2>테스트 경기 생성</h2>
-        <p>두 플레이어와 점수를 입력하고 더미 결과를 저장합니다.</p>
+        <p>{user ? `${user.nickname} 님의 토큰으로 결과를 저장합니다.` : '로그인 후 이용 가능합니다.'}</p>
         <form className="form" onSubmit={handleSubmit}>
           <label>
             플레이어 A
@@ -93,6 +103,7 @@ export function LobbyPage() {
           <button className="button" type="submit" disabled={loading}>
             {loading ? '저장 중...' : '결과 저장'}
           </button>
+          {error && <p className="error">{error}</p>}
         </form>
       </section>
 

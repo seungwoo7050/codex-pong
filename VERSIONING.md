@@ -125,6 +125,8 @@ Establish the full-stack skeleton (backend + frontend + infra) and deliver a **m
 
 ## 4. v0.2.0 – Accounts, authentication & basic profile
 
+**Status**: completed (JWT 인증, 기본 프로필, 보호 라우트/웹소켓 연동, 문서/가이드 업데이트)
+
 **Goal**
 
 Introduce real user accounts and basic profiles, moving away from “temporary nickname only”.

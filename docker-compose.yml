@@ -32,6 +32,7 @@ services:
       - DB_NAME=codexpong
       - DB_USER=codexpong
       - DB_PASSWORD=codexpong
+      - AUTH_JWT_SECRET=change-me-in-prod-secret-please-keep-long
       - TZ=Asia/Seoul
     ports:
       - "8080:8080"
