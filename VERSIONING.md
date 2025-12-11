@@ -65,6 +65,8 @@ Details are specified per version below.
 
 ## 3. v0.1.0 – Core skeleton & minimal vertical slice
 
+**Status**: completed (skeleton, health check, demo game flow, WebSocket echo, Docker Compose)
+
 **Goal**
 
 Establish the full-stack skeleton (backend + frontend + infra) and deliver a **minimal playable flow**:
