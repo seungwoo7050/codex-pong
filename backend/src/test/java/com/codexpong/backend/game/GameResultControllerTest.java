@@ -1,15 +1,11 @@
 package com.codexpong.backend.game;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -21,10 +17,10 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * [테스트] backend/src/test/java/com/codexpong/backend/game/GameResultControllerTest.java
  * 설명:
- *   - 테스트 경기 생성 및 조회 흐름이 정상 동작하는지 검증한다.
- * 버전: v0.1.0
+ *   - v0.3.0에서 조회 전용으로 전환된 경기 기록 API가 인증 후 접근 가능한지 검증한다.
+ * 버전: v0.3.0
  * 관련 설계문서:
- *   - design/backend/v0.1.0-core-skeleton-and-health.md
+ *   - design/backend/v0.3.0-game-and-matchmaking.md
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -37,27 +33,13 @@ class GameResultControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private static final AtomicInteger COUNTER = new AtomicInteger();
-
     @Test
-    void 경기를_생성하고_목록에서_확인한다() throws Exception {
-        String username = "player" + COUNTER.incrementAndGet();
-        String token = obtainToken(username);
-        GameResultRequest request = new GameResultRequest("playerA", "playerB", 5, 3);
-
-        mockMvc.perform(post("/api/games")
-                        .header("Authorization", "Bearer " + token)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.playerA", is("playerA")))
-                .andExpect(jsonPath("$.scoreB", is(3)));
+    void 인증된_사용자가_경기_기록을_조회할_수_있다() throws Exception {
+        String token = obtainToken("record-viewer");
 
         mockMvc.perform(get("/api/games")
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].playerB", is("playerB")));
+                .andExpect(status().isOk());
     }
 
     private String obtainToken(String username) throws Exception {

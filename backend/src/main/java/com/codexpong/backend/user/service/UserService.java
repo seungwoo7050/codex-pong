@@ -41,4 +41,13 @@ public class UserService {
         User saved = userRepository.save(user);
         return UserResponse.from(saved);
     }
+
+    /**
+     * 설명:
+     *   - 게임/매칭 등 내부 도메인 로직에서 사용할 엔티티를 조회한다.
+     */
+    public User getUserEntity(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+    }
 }

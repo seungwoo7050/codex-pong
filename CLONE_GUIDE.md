@@ -1,8 +1,8 @@
-# CLONE_GUIDE (v0.2.0)
+# CLONE_GUIDE (v0.3.0)
 
 ## 1. 목적
-- v0.2.0 기준 계정/인증/기본 프로필 기능을 빠르게 클론하고 실행하기 위한 안내서다.
-- 백엔드/프런트엔드/인프라와 JWT 시크릿 환경변수를 한 번에 검증한다.
+- v0.3.0 기준 실시간 1:1 게임/빠른 대전 흐름을 실행하기 위한 안내서다.
+- 백엔드/프런트엔드/인프라와 JWT 시크릿, WebSocket 연결을 한 번에 검증한다.
 
 ## 2. 사전 준비물
 - Git
@@ -42,7 +42,8 @@ docker compose up -d
   - 웹: http://localhost/
   - 헬스체크: http://localhost/api/health
   - WebSocket: ws://localhost/ws/echo (쿼리 파라미터 `token` 필요)
-  - REST 예시: `/api/auth/register`로 회원가입 후 `/api/users/me` 조회
+  - 게임 WebSocket: ws://localhost/ws/game?roomId=<매칭된-방>&token=<JWT>
+  - REST 예시: `/api/auth/register`로 회원가입 후 `/api/match/quick`으로 빠른 대전 티켓 발급
 
 ## 6. 개별 서비스 로컬 실행 (선택)
 ### 6.1 백엔드
@@ -76,6 +77,7 @@ npm install
 npm run build
 ```
 
-## 8. 버전별 메모 (v0.2.0)
-- 주요 기능: JWT 기반 회원가입/로그인/로그아웃, 내 프로필 조회/수정, 보호된 라우트.
-- WebSocket 에코는 JWT 토큰을 동반해 연결해야 하며, 응답에 닉네임이 포함된다.
+## 8. 버전별 메모 (v0.3.0)
+- 주요 기능: 빠른 대전 큐, 실시간 1:1 게임 루프, 경기 결과 저장/조회.
+- 매칭 절차: 로비에서 "빠른 대전" 클릭 → `/api/match/quick` 티켓 발급 → roomId로 `/ws/game` 연결.
+- WebSocket 연결에는 JWT 토큰이 필요하며, 120초 타임아웃으로 유지된다.

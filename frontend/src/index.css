@@ -164,3 +164,52 @@ input {
   color: #34d399;
   margin: 4px 0 0;
 }
+
+.game-area {
+  display: grid;
+  gap: 12px;
+}
+
+.court {
+  position: relative;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, rgba(15, 23, 42, 0.9) 60%);
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.paddle {
+  position: absolute;
+  width: 12px;
+  background: linear-gradient(180deg, #22d3ee, #1d4ed8);
+  border-radius: 8px;
+}
+
+.paddle.left {
+  left: 0;
+}
+
+.paddle.right {
+  right: 0;
+}
+
+.ball {
+  position: absolute;
+  background: #fbbf24;
+  border-radius: 50%;
+}
+
+.scoreboard {
+  display: flex;
+  gap: 12px;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+}
+
+.hint {
+  color: #93c5fd;
+  margin-top: 8px;
+}

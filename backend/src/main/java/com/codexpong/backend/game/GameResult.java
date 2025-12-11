@@ -1,23 +1,27 @@
 package com.codexpong.backend.game;
 
+import com.codexpong.backend.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
 /**
  * [엔티티] backend/src/main/java/com/codexpong/backend/game/GameResult.java
  * 설명:
- *   - 테스트용 경기 결과를 저장하기 위한 단순 엔티티다.
- *   - v0.1.0에서는 스코어 및 참여자 이름만 보관한다.
- * 버전: v0.1.0
+ *   - v0.3.0 실시간 경기 종료 후 결과를 영속화하기 위한 엔티티다.
+ *   - 사용자 엔티티와 연결하여 추후 전적/랭킹으로 확장 가능한 형태를 유지한다.
+ * 버전: v0.3.0
  * 관련 설계문서:
- *   - design/backend/v0.1.0-core-skeleton-and-health.md
+ *   - design/backend/v0.3.0-game-and-matchmaking.md
  * 변경 이력:
  *   - v0.1.0: 기본 필드 정의 및 자동 증가 ID 추가
+ *   - v0.3.0: User 연관 관계와 룸/시간 정보를 포함한 전적 구조로 확장
  */
 @Entity
 @Table(name = "game_results")
@@ -27,11 +31,13 @@ public class GameResult {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String playerA;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "player_a_id")
+    private User playerA;
 
-    @Column(nullable = false, length = 50)
-    private String playerB;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "player_b_id")
+    private User playerB;
 
     @Column(nullable = false)
     private int scoreA;
@@ -39,29 +45,38 @@ public class GameResult {
     @Column(nullable = false)
     private int scoreB;
 
+    @Column(nullable = false, length = 100)
+    private String roomId;
+
     @Column(nullable = false)
-    private LocalDateTime playedAt;
+    private LocalDateTime startedAt;
+
+    @Column(nullable = false)
+    private LocalDateTime finishedAt;
 
     protected GameResult() {
     }
 
-    public GameResult(String playerA, String playerB, int scoreA, int scoreB, LocalDateTime playedAt) {
+    public GameResult(User playerA, User playerB, int scoreA, int scoreB, String roomId,
+            LocalDateTime startedAt, LocalDateTime finishedAt) {
         this.playerA = playerA;
         this.playerB = playerB;
         this.scoreA = scoreA;
         this.scoreB = scoreB;
-        this.playedAt = playedAt;
+        this.roomId = roomId;
+        this.startedAt = startedAt;
+        this.finishedAt = finishedAt;
     }
 
     public Long getId() {
         return id;
     }
 
-    public String getPlayerA() {
+    public User getPlayerA() {
         return playerA;
     }
 
-    public String getPlayerB() {
+    public User getPlayerB() {
         return playerB;
     }
 
@@ -73,7 +88,15 @@ public class GameResult {
         return scoreB;
     }
 
-    public LocalDateTime getPlayedAt() {
-        return playedAt;
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }
+
+    public LocalDateTime getFinishedAt() {
+        return finishedAt;
     }
 }

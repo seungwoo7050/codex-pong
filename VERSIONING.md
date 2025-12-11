@@ -174,6 +174,8 @@ Introduce real user accounts and basic profiles, moving away from “temporary n
 
 ## 5. v0.3.0 – Real-time 1v1 game & simple matchmaking
 
+**Status**: completed (빠른 대전/실시간 1:1 경기)
+
 **Goal**
 
 Deliver an actual playable **real-time 1v1 Pong-like game** with simple matchmaking.

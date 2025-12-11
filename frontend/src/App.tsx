@@ -12,13 +12,14 @@ import { ProtectedRoute } from './features/auth/ProtectedRoute'
  * [루트] frontend/src/App.tsx
  * 설명:
  *   - 기본 네비게이션과 페이지 라우팅을 설정한다.
- *   - v0.2.0에서는 로그인/회원가입/프로필 화면과 보호된 라우트를 포함한다.
- * 버전: v0.2.0
+ *   - v0.3.0에서는 빠른 대전/실시간 경기 페이지까지 보호된 라우트를 확장한다.
+ * 버전: v0.3.0
  * 관련 설계문서:
- *   - design/frontend/v0.2.0-auth-and-profile-ui.md
+ *   - design/frontend/v0.3.0-game-lobby-and-play-ui.md
  * 변경 이력:
  *   - v0.1.0: React Router 기반 기본 라우팅 추가
  *   - v0.2.0: 인증 라우팅 및 네비게이션 확장
+ *   - v0.3.0: 게임 전용 보호 라우트 추가
  */
 function App() {
   const { user, status, logout } = useAuth()
