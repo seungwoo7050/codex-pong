@@ -1,6 +1,7 @@
 package com.codexpong.backend.config;
 
 import com.codexpong.backend.game.EchoWebSocketHandler;
+import com.codexpong.backend.game.GameWebSocketHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
@@ -24,17 +25,25 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 public class WebSocketConfig implements WebSocketConfigurer {
 
     private final EchoWebSocketHandler echoWebSocketHandler;
+    private final GameWebSocketHandler gameWebSocketHandler;
     private final WebSocketAuthHandshakeInterceptor webSocketAuthHandshakeInterceptor;
 
     public WebSocketConfig(EchoWebSocketHandler echoWebSocketHandler,
+            GameWebSocketHandler gameWebSocketHandler,
             WebSocketAuthHandshakeInterceptor webSocketAuthHandshakeInterceptor) {
         this.echoWebSocketHandler = echoWebSocketHandler;
+        this.gameWebSocketHandler = gameWebSocketHandler;
         this.webSocketAuthHandshakeInterceptor = webSocketAuthHandshakeInterceptor;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(echoWebSocketHandler, "/ws/echo")
+                .addInterceptors(webSocketAuthHandshakeInterceptor)
+                .setHandshakeHandler(new WebSocketUserHandshakeHandler())
+                .setAllowedOrigins("*");
+
+        registry.addHandler(gameWebSocketHandler, "/ws/game")
                 .addInterceptors(webSocketAuthHandshakeInterceptor)
                 .setHandshakeHandler(new WebSocketUserHandshakeHandler())
                 .setAllowedOrigins("*");
