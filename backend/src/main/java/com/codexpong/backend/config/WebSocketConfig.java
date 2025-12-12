@@ -4,6 +4,7 @@ import com.codexpong.backend.chat.ChatWebSocketHandler;
 import com.codexpong.backend.game.EchoWebSocketHandler;
 import com.codexpong.backend.game.GameWebSocketHandler;
 import com.codexpong.backend.social.SocialWebSocketHandler;
+import com.codexpong.backend.tournament.TournamentWebSocketHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
@@ -37,17 +38,20 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final GameWebSocketHandler gameWebSocketHandler;
     private final SocialWebSocketHandler socialWebSocketHandler;
     private final ChatWebSocketHandler chatWebSocketHandler;
+    private final TournamentWebSocketHandler tournamentWebSocketHandler;
     private final WebSocketAuthHandshakeInterceptor webSocketAuthHandshakeInterceptor;
 
     public WebSocketConfig(EchoWebSocketHandler echoWebSocketHandler,
             GameWebSocketHandler gameWebSocketHandler,
             SocialWebSocketHandler socialWebSocketHandler,
             ChatWebSocketHandler chatWebSocketHandler,
+            TournamentWebSocketHandler tournamentWebSocketHandler,
             WebSocketAuthHandshakeInterceptor webSocketAuthHandshakeInterceptor) {
         this.echoWebSocketHandler = echoWebSocketHandler;
         this.gameWebSocketHandler = gameWebSocketHandler;
         this.socialWebSocketHandler = socialWebSocketHandler;
         this.chatWebSocketHandler = chatWebSocketHandler;
+        this.tournamentWebSocketHandler = tournamentWebSocketHandler;
         this.webSocketAuthHandshakeInterceptor = webSocketAuthHandshakeInterceptor;
     }
 
@@ -69,6 +73,11 @@ public class WebSocketConfig implements WebSocketConfigurer {
                 .setAllowedOrigins("*");
 
         registry.addHandler(chatWebSocketHandler, "/ws/chat")
+                .addInterceptors(webSocketAuthHandshakeInterceptor)
+                .setHandshakeHandler(new WebSocketUserHandshakeHandler())
+                .setAllowedOrigins("*");
+
+        registry.addHandler(tournamentWebSocketHandler, "/ws/tournament")
                 .addInterceptors(webSocketAuthHandshakeInterceptor)
                 .setHandshakeHandler(new WebSocketUserHandshakeHandler())
                 .setAllowedOrigins("*");

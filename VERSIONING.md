@@ -354,6 +354,8 @@ Enable text communication between users.
 
 ## 9. v0.7.0 – Tournaments & events (simple bracket)
 
+**Status**: completed (단일 제거 토너먼트 생성/참여/진행, 실시간 알림/브래킷 UI 포함)
+
 **Goal**
 
 Support basic tournament play.

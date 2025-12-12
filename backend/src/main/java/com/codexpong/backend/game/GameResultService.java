@@ -3,6 +3,7 @@ package com.codexpong.backend.game;
 import com.codexpong.backend.game.domain.MatchType;
 import com.codexpong.backend.game.service.RankingService;
 import com.codexpong.backend.user.domain.User;
+import org.springframework.context.ApplicationEventPublisher;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -26,10 +27,13 @@ public class GameResultService {
 
     private final GameResultRepository gameResultRepository;
     private final RankingService rankingService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public GameResultService(GameResultRepository gameResultRepository, RankingService rankingService) {
+    public GameResultService(GameResultRepository gameResultRepository, RankingService rankingService,
+            ApplicationEventPublisher eventPublisher) {
         this.gameResultRepository = gameResultRepository;
         this.rankingService = rankingService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -50,7 +54,9 @@ public class GameResultService {
 
         GameResult gameResult = new GameResult(playerA, playerB, scoreA, scoreB, roomId, matchType,
                 ratingChangeA, ratingChangeB, ratingAfterA, ratingAfterB, startedAt, finishedAt);
-        return gameResultRepository.save(gameResult);
+        GameResult saved = gameResultRepository.save(gameResult);
+        eventPublisher.publishEvent(saved);
+        return saved;
     }
 
     @Transactional(readOnly = true)
