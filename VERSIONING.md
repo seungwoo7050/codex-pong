@@ -269,6 +269,8 @@ Introduce a ranked queue and a simple rating system.
 
 ## 7. v0.5.0 – Friends & invitations (basic social graph)
 
+**Status**: completed (friends, blocks, invitations)
+
 **Goal**
 
 Add core social features: friends, blocks, invitations.
