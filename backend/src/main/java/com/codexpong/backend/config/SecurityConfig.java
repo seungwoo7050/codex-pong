@@ -1,8 +1,10 @@
 package com.codexpong.backend.config;
 
 import com.codexpong.backend.auth.config.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -11,7 +13,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * [보안 설정] backend/src/main/java/com/codexpong/backend/config/SecurityConfig.java
@@ -23,6 +24,7 @@ import jakarta.servlet.http.HttpServletResponse;
  *   - design/backend/v0.2.0-auth-and-profile.md
  * 변경 이력:
  *   - v0.2.0: JWT 필터와 세션 정책 설정 추가
+ *   - v0.6.0: 로비/매치 채팅 히스토리 GET 엔드포인트를 비인증 허용으로 확장
  */
 @Configuration
 @EnableWebSecurity
@@ -40,6 +42,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(registry -> registry
                         .requestMatchers("/api/health/**").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/chat/lobby", "/api/chat/match/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated()
                 )

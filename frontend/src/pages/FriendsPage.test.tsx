@@ -17,6 +17,20 @@ vi.mock('../features/auth/AuthProvider', () => ({
 describe('FriendsPage', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    const socketMock = {
+      send: vi.fn(),
+      close: vi.fn(),
+      readyState: WebSocket.OPEN,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      set onopen(handler) {
+        if (typeof handler === 'function') handler({} as Event)
+      },
+      set onclose(_handler) {},
+      set onerror(_handler) {},
+      set onmessage(_handler) {},
+    } as unknown as WebSocket
+    vi.stubGlobal('WebSocket', vi.fn(() => socketMock))
     vi.spyOn(global, 'fetch').mockImplementation((input, init) => {
       const url = typeof input === 'string' ? input : input.url
       if (url.endsWith('/api/social/friends')) {
@@ -38,6 +52,9 @@ describe('FriendsPage', () => {
       }
       if (url.endsWith('/api/social/invites/incoming') || url.endsWith('/api/social/invites/outgoing')) {
         return Promise.resolve(new Response(JSON.stringify([]), { status: 200 }))
+      }
+      if (url.includes('/api/chat/dm') || url.includes('/api/chat/lobby')) {
+        return Promise.resolve(new Response(JSON.stringify({ messages: [] }), { status: 200 }))
       }
       return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }))
     })
