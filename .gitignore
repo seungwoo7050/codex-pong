@@ -10,8 +10,8 @@
 /backend/.project
 /backend/.settings/
 /backend/gradle-app.setting
-/backend/gradlew*
 /backend/gradle/wrapper/gradle-wrapper.jar
+/backend/gradlew*
 /backend/.DS_Store
 
 # 프론트엔드(React, Vite)

@@ -311,6 +311,8 @@ Add core social features: friends, blocks, invitations.
 
 ## 8. v0.6.0 – Chat (DM, lobby chat, match chat)
 
+**Status**: completed (DM/로비/매치 채팅, 기본 뮤트 훅, WebSocket 이벤트 정의)
+
 **Goal**
 
 Enable text communication between users.

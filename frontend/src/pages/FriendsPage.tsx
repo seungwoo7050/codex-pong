@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../features/auth/AuthProvider'
+import { fetchDmHistory, sendDmMessage } from '../features/chat/api'
 import {
   acceptFriendRequest,
   acceptInvite,
@@ -17,6 +18,8 @@ import {
   sendInvite,
   unblockUser,
 } from '../features/social/api'
+import { useChatSocket } from '../hooks/useChatSocket'
+import { ChatMessage } from '../shared/types/chat'
 import { FriendRequestItem, FriendSummary, GameInvite } from '../shared/types/social'
 
 /**
@@ -24,17 +27,30 @@ import { FriendRequestItem, FriendSummary, GameInvite } from '../shared/types/so
  * 설명:
  *   - 친구 목록, 친구 요청, 차단, 초대 흐름을 한 화면에서 관리한다.
  *   - v0.5.0 소셜 기능을 UI로 연결하고 초대 수락 시 게임 화면으로 이동한다.
- * 버전: v0.5.0
+ *   - v0.6.0에서 친구 목록과 연계된 DM 채팅 패널을 제공한다.
+ * 버전: v0.6.0
  * 관련 설계문서:
  *   - design/frontend/v0.5.0-friends-and-invites-ui.md
+ *   - design/frontend/v0.6.0-chat-ui.md
+ *   - design/realtime/v0.6.0-chat-events.md
  */
 export function FriendsPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [friendTarget, setFriendTarget] = useState('')
   const [blockTarget, setBlockTarget] = useState('')
   const [statusMessage, setStatusMessage] = useState('')
+  const [selectedFriend, setSelectedFriend] = useState<FriendSummary | null>(null)
+  const [dmMessages, setDmMessages] = useState<ChatMessage[]>([])
+  const [dmInput, setDmInput] = useState('')
+  const chatSocket = useChatSocket(token, (msg) => {
+    if (msg.channelType === 'DM' && selectedFriend &&
+      ((msg.senderId === selectedFriend.userId && msg.recipientId === user?.id) ||
+        (msg.senderId === user?.id && msg.recipientId === selectedFriend.userId))) {
+      setDmMessages((prev) => [...prev, msg])
+    }
+  })
 
   const friendsQuery = useQuery({
     queryKey: ['friends'],
@@ -145,8 +161,30 @@ export function FriendsPage() {
       .catch(() => setStatusMessage('차단 해제에 실패했습니다.'))
   }
 
+  const handleSelectFriend = (friend: FriendSummary) => {
+    setSelectedFriend(friend)
+    setDmInput('')
+    if (!token) return
+    fetchDmHistory(token, friend.userId)
+      .then((res) => setDmMessages(res.messages))
+      .catch(() => setStatusMessage('DM 기록을 불러오지 못했습니다.'))
+  }
+
+  const handleSendDm = () => {
+    if (!selectedFriend || !token || !dmInput.trim()) return
+    chatSocket.sendDm(selectedFriend.userId, dmInput.trim())
+    sendDmMessage(token, selectedFriend.userId, dmInput.trim()).catch(() => setStatusMessage('DM 전송에 실패했습니다.'))
+    setDmInput('')
+  }
+
   const renderFriend = (friend: FriendSummary) => (
-    <li key={friend.userId} className="list-item friend-item">
+    <li
+      key={friend.userId}
+      className="list-item friend-item"
+      onClick={() => handleSelectFriend(friend)}
+      role="button"
+      tabIndex={0}
+    >
       <div>
         <div className="row">
           <span className="nickname">{friend.nickname}</span>
@@ -206,6 +244,35 @@ export function FriendsPage() {
         {friendsQuery.isLoading && <p>불러오는 중...</p>}
         {friendsQuery.data && friendsQuery.data.length === 0 && <p>아직 친구가 없습니다.</p>}
         <ul className="list">{friendsQuery.data?.map(renderFriend)}</ul>
+      </section>
+
+      <section className="panel">
+        <h2>DM 채팅</h2>
+        <p className="hint">친구 목록에서 대상을 선택하면 최근 대화를 불러옵니다. 연결 상태: {chatSocket.connected ? '실시간' : '대기 중'}</p>
+        {selectedFriend ? (
+          <div className="chat-box">
+            <div className="chat-messages">
+              {dmMessages.map((msg) => (
+                <div key={msg.id} className="chat-line">
+                  <strong>{msg.senderNickname}</strong>: {msg.content}
+                </div>
+              ))}
+              {dmMessages.length === 0 && <p className="hint">메시지가 없습니다. 첫 메시지를 보내보세요.</p>}
+            </div>
+            <div className="chat-input">
+              <input
+                value={dmInput}
+                onChange={(e) => setDmInput(e.target.value)}
+                placeholder={`${selectedFriend.nickname}에게 보낼 메시지`}
+              />
+              <button className="button" type="button" onClick={handleSendDm}>
+                전송
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="hint">DM을 보낼 친구를 목록에서 선택하세요.</p>
+        )}
       </section>
 
       <section className="panel grid-two">

@@ -42,7 +42,7 @@ class SocialFlowTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private static final AtomicInteger COUNTER = new AtomicInteger();
+    private static final AtomicInteger COUNTER = new AtomicInteger(1000);
     private String aliceToken;
     private String bobToken;
     private String aliceUsername;
