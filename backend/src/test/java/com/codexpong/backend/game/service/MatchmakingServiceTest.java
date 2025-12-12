@@ -30,10 +30,10 @@ class MatchmakingServiceTest {
         ReflectionTestUtils.setField(alice, "id", 1L);
         ReflectionTestUtils.setField(bob, "id", 2L);
 
-        MatchTicket first = matchmakingService.enqueue(alice);
+        MatchTicket first = matchmakingService.enqueue(alice, com.codexpong.backend.game.domain.MatchType.NORMAL);
         assertThat(first.status()).isEqualTo("WAITING");
 
-        MatchTicket second = matchmakingService.enqueue(bob);
+        MatchTicket second = matchmakingService.enqueue(bob, com.codexpong.backend.game.domain.MatchType.NORMAL);
         assertThat(second.status()).isEqualTo("MATCHED");
         assertThat(second.roomId()).isNotNull();
     }

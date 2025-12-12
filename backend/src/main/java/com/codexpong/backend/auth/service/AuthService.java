@@ -18,11 +18,12 @@ import org.springframework.web.server.ResponseStatusException;
  * 설명:
  *   - 회원가입, 로그인, 토큰 생성 흐름을 담당한다.
  *   - 비밀번호 검증 및 사용자 중복 체크를 수행한 뒤 토큰과 사용자 정보를 반환한다.
- * 버전: v0.2.0
+ * 버전: v0.4.0
  * 관련 설계문서:
- *   - design/backend/v0.2.0-auth-and-profile.md
+ *   - design/backend/v0.4.0-ranking-system.md
  * 변경 이력:
  *   - v0.2.0: JWT 발급 기반 인증 서비스 구현
+ *   - v0.4.0: 레이팅 필드 포함 사용자 응답 유지
  */
 @Service
 public class AuthService {

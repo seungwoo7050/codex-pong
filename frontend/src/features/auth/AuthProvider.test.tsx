@@ -21,6 +21,7 @@ describe('AuthProvider', () => {
       username: 'tester',
       nickname: '테스터',
       avatarUrl: null,
+      rating: 1200,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }

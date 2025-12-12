@@ -1,25 +1,31 @@
 import { useEffect, useRef, useState } from 'react'
 import { WS_BASE_URL } from '../constants'
-import { GameServerMessage, GameSnapshot } from '../shared/types/game'
+import { GameServerMessage, GameSnapshot, RatingChange } from '../shared/types/game'
 
 /**
  * [훅] frontend/src/hooks/useGameSocket.ts
  * 설명:
  *   - 주어진 roomId와 토큰으로 게임 WebSocket을 연결하고 상태 스냅샷을 관리한다.
  *   - 입력 방향을 서버에 전송하는 헬퍼를 제공한다.
- * 버전: v0.3.0
+ * 버전: v0.4.0
  * 관련 설계문서:
- *   - design/frontend/v0.3.0-game-lobby-and-play-ui.md
- *   - design/realtime/v0.3.0-game-loop-and-events.md
+ *   - design/frontend/v0.4.0-ranking-and-leaderboard-ui.md
+ *   - design/realtime/v0.4.0-ranking-aware-events.md
  */
 export function useGameSocket(roomId?: string | null, token?: string | null) {
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState('')
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null)
+  const [matchType, setMatchType] = useState<'NORMAL' | 'RANKED' | null>(null)
+  const [ratingChange, setRatingChange] = useState<RatingChange | null>(null)
   const socketRef = useRef<WebSocket | null>(null)
 
   useEffect(() => {
     if (!roomId || !token) return
+
+    setSnapshot(null)
+    setMatchType(null)
+    setRatingChange(null)
 
     const socket = new WebSocket(
       `${WS_BASE_URL}/ws/game?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`,
@@ -35,6 +41,10 @@ export function useGameSocket(roomId?: string | null, token?: string | null) {
     socket.onmessage = (event) => {
       const data: GameServerMessage = JSON.parse(event.data)
       setSnapshot(data.snapshot)
+      setMatchType(data.matchType)
+      if (data.ratingChange) {
+        setRatingChange(data.ratingChange)
+      }
     }
 
     return () => {
@@ -52,5 +62,5 @@ export function useGameSocket(roomId?: string | null, token?: string | null) {
     socketRef.current.send(JSON.stringify(payload))
   }
 
-  return { connected, error, snapshot, sendInput }
+  return { connected, error, snapshot, matchType, ratingChange, sendInput }
 }

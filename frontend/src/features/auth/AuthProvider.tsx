@@ -8,9 +8,9 @@ import { UserProfile } from '../../shared/types/user'
  * 설명:
  *   - JWT 기반 인증 상태를 전역으로 관리하고 로그인 유지/로그아웃/프로필 갱신 기능을 제공한다.
  *   - 로컬 스토리지와 React Query를 이용해 새로고침 후에도 인증 정보를 복원한다.
- * 버전: v0.2.0
+ * 버전: v0.4.0
  * 관련 설계문서:
- *   - design/frontend/v0.2.0-auth-and-profile-ui.md
+ *   - design/frontend/v0.4.0-ranking-and-leaderboard-ui.md
  */
 interface AuthContextValue {
   status: 'loading' | 'authenticated' | 'guest'

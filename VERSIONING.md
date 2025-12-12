@@ -231,6 +231,8 @@ Deliver an actual playable **real-time 1v1 Pong-like game** with simple matchmak
 
 ## 6. v0.4.0 – Ranked mode & basic ranking system
 
+**Status**: completed (랭크 큐, 레이팅 갱신, 기본 리더보드)
+
 **Goal**
 
 Introduce a ranked queue and a simple rating system.

@@ -13,11 +13,12 @@ import org.springframework.web.server.ResponseStatusException;
  * 설명:
  *   - 로그인한 사용자의 프로필 조회 및 수정 로직을 담당한다.
  *   - 존재하지 않는 사용자의 접근을 방지하고 입력값을 엔티티에 반영한다.
- * 버전: v0.2.0
+ * 버전: v0.4.0
  * 관련 설계문서:
- *   - design/backend/v0.2.0-auth-and-profile.md
+ *   - design/backend/v0.4.0-ranking-system.md
  * 변경 이력:
  *   - v0.2.0: 프로필 조회/수정 서비스 추가
+ *   - v0.4.0: 레이팅 필드 반환 및 랭킹 연계 대비
  */
 @Service
 public class UserService {

@@ -6,12 +6,13 @@ import java.time.LocalDateTime;
  * [DTO] backend/src/main/java/com/codexpong/backend/game/GameResultResponse.java
  * 설명:
  *   - 클라이언트에 노출할 경기 결과 정보를 단순화한 응답 모델이다.
- * 버전: v0.3.0
+ * 버전: v0.4.0
  * 관련 설계문서:
- *   - design/backend/v0.3.0-game-and-matchmaking.md
+ *   - design/backend/v0.4.0-ranking-system.md
  * 변경 이력:
  *   - v0.1.0: 엔티티 매핑 전용 DTO 추가
  *   - v0.3.0: 사용자/시간/룸 정보를 포함하도록 확장
+ *   - v0.4.0: 매치 타입과 레이팅 변동 정보를 포함
  */
 public record GameResultResponse(
         Long id,
@@ -21,6 +22,11 @@ public record GameResultResponse(
         String playerBNickname,
         int scoreA,
         int scoreB,
+        String matchType,
+        int ratingChangeA,
+        int ratingChangeB,
+        int ratingAfterA,
+        int ratingAfterB,
         String roomId,
         LocalDateTime startedAt,
         LocalDateTime finishedAt
@@ -35,6 +41,11 @@ public record GameResultResponse(
                 entity.getPlayerB().getNickname(),
                 entity.getScoreA(),
                 entity.getScoreB(),
+                entity.getMatchType(),
+                entity.getRatingChangeA(),
+                entity.getRatingChangeB(),
+                entity.getRatingAfterA(),
+                entity.getRatingAfterB(),
                 entity.getRoomId(),
                 entity.getStartedAt(),
                 entity.getFinishedAt()

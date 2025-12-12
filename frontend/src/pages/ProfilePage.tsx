@@ -1,15 +1,16 @@
 import { FormEvent, useMemo, useState } from 'react'
 import { useAuth } from '../features/auth/AuthProvider'
 import { updateProfile } from '../features/auth/api'
+import { toTierLabel } from '../shared/utils/rating'
 
 /**
  * [페이지] frontend/src/pages/ProfilePage.tsx
  * 설명:
  *   - 현재 로그인한 사용자의 기본 프로필을 보여주고 닉네임/아바타를 수정한다.
  *   - 저장 후 전역 인증 상태도 갱신한다.
- * 버전: v0.2.0
+ * 버전: v0.4.0
  * 관련 설계문서:
- *   - design/frontend/v0.2.0-auth-and-profile-ui.md
+ *   - design/frontend/v0.4.0-ranking-and-leaderboard-ui.md
  */
 export function ProfilePage() {
   const { user, token, refreshProfile } = useAuth()
@@ -49,6 +50,7 @@ export function ProfilePage() {
         <p>아이디: {user.username}</p>
         <p>생성 시각: {createdAt}</p>
         <p>최근 수정: {updatedAt}</p>
+        <p>현재 레이팅: {user.rating}점 ({toTierLabel(user.rating)})</p>
         <form className="form" onSubmit={handleSubmit}>
           <label>
             닉네임
