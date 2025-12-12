@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthProvider'
+import { fetchLobbyMessages } from '../features/chat/api'
 import { useQuickMatch } from '../hooks/useQuickMatch'
+import { useChatSocket } from '../hooks/useChatSocket'
 import { apiFetch } from '../shared/api/client'
+import { ChatMessage } from '../shared/types/chat'
 import { toTierLabel } from '../shared/utils/rating'
 
 interface GameResult {
@@ -27,24 +30,38 @@ interface GameResult {
  * [페이지] frontend/src/pages/LobbyPage.tsx
  * 설명:
  *   - v0.4.0 일반/랭크 큐를 구분해 입장 버튼을 제공하고 현재 레이팅을 노출한다.
- *   - 최근 경기 결과에서 랭크 여부와 점수 변동을 표시한다.
- * 버전: v0.4.0
+ *   - 최근 경기 결과에서 랭크 여부와 점수 변동을 표시하고, v0.6.0에서는 로비 채팅 패널을 제공한다.
+ * 버전: v0.6.0
  * 관련 설계문서:
  *   - design/frontend/v0.4.0-ranking-and-leaderboard-ui.md
+ *   - design/frontend/v0.6.0-chat-ui.md
  */
 export function LobbyPage() {
   const { token, user } = useAuth()
-  const navigate = useNavigate()
-  const normalQueue = useQuickMatch('normal', token)
-  const rankedQueue = useQuickMatch('ranked', token)
-  const [results, setResults] = useState<GameResult[]>([])
-  const [error, setError] = useState('')
+ const navigate = useNavigate()
+ const normalQueue = useQuickMatch('normal', token)
+ const rankedQueue = useQuickMatch('ranked', token)
+ const [results, setResults] = useState<GameResult[]>([])
+ const [error, setError] = useState('')
+  const [lobbyMessages, setLobbyMessages] = useState<ChatMessage[]>([])
+  const [lobbyInput, setLobbyInput] = useState('')
+  const chatSocket = useChatSocket(token, (msg) => {
+    if (msg.channelType === 'LOBBY') {
+      setLobbyMessages((prev) => [...prev, msg])
+    }
+  })
 
   useEffect(() => {
     if (!token) return
     apiFetch<GameResult[]>('/api/games', { method: 'GET' }, token)
       .then(setResults)
       .catch(() => setError('최근 경기 결과를 불러오지 못했습니다.'))
+  }, [token])
+
+  useEffect(() => {
+    fetchLobbyMessages(token)
+      .then((res) => setLobbyMessages(res.messages))
+      .catch(() => setError('로비 채팅 기록을 불러오지 못했습니다.'))
   }, [token])
 
   useEffect(() => {
@@ -92,6 +109,39 @@ export function LobbyPage() {
           {rankedQueue.status === 'waiting' ? '랭크전 대기 중...' : '랭크전 시작'}
         </button>
         {rankedQueue.message && <p className="hint">{rankedQueue.message}</p>}
+      </section>
+
+      <section className="panel">
+        <h2>로비 채팅</h2>
+        <p className="hint">전체 로비 참여자와 간단한 메시지를 주고받습니다. 연결 상태: {chatSocket.connected ? '실시간' : '대기 중'}</p>
+        <div className="chat-box">
+          <div className="chat-messages">
+            {lobbyMessages.map((msg) => (
+              <div key={msg.id} className="chat-line">
+                <strong>{msg.senderNickname}</strong>: {msg.content}
+              </div>
+            ))}
+            {lobbyMessages.length === 0 && <p className="hint">아직 메시지가 없습니다.</p>}
+          </div>
+          <div className="chat-input">
+            <input
+              value={lobbyInput}
+              onChange={(e) => setLobbyInput(e.target.value)}
+              placeholder="로비에 보낼 메시지"
+            />
+            <button
+              className="button"
+              type="button"
+              onClick={() => {
+                if (!lobbyInput.trim()) return
+                chatSocket.sendLobby(lobbyInput.trim())
+                setLobbyInput('')
+              }}
+            >
+              보내기
+            </button>
+          </div>
+        </div>
       </section>
 
       {error && <p className="error">{error}</p>}

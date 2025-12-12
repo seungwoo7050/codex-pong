@@ -1,18 +1,23 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthProvider'
+import { fetchMatchMessages, sendMatchMessage } from '../features/chat/api'
+import { useChatSocket } from '../hooks/useChatSocket'
 import { useGameSocket } from '../hooks/useGameSocket'
+import { ChatMessage } from '../shared/types/chat'
 import { GameSnapshot } from '../shared/types/game'
 
 /**
  * [페이지] frontend/src/pages/GamePage.tsx
  * 설명:
  *   - WebSocket으로 전달받은 게임 스냅샷을 렌더링하고 간단한 패들 입력 버튼을 제공한다.
- *   - v0.4.0에서는 랭크/일반 구분과 레이팅 변동 메시지를 표시한다.
- * 버전: v0.4.0
+ *   - v0.4.0에서는 랭크/일반 구분과 레이팅 변동 메시지를 표시하고, v0.6.0에서는 매치 채팅 패널을 추가한다.
+ * 버전: v0.6.0
  * 관련 설계문서:
  *   - design/frontend/v0.4.0-ranking-and-leaderboard-ui.md
+ *   - design/frontend/v0.6.0-chat-ui.md
  *   - design/realtime/v0.4.0-ranking-aware-events.md
+ *   - design/realtime/v0.6.0-chat-events.md
  */
 export function GamePage() {
   const { token, user } = useAuth()
@@ -21,12 +26,27 @@ export function GamePage() {
   const roomId = params.get('roomId')
 
   const { connected, error, snapshot, sendInput, matchType, ratingChange } = useGameSocket(roomId, token)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const chatSocket = useChatSocket(token, (msg) => {
+    if (msg.channelType === 'MATCH' && roomId && msg.channelKey === roomId) {
+      setChatMessages((prev) => [...prev, msg])
+    }
+  })
 
   useEffect(() => {
     if (!roomId) {
       navigate('/lobby')
     }
   }, [roomId, navigate])
+
+  useEffect(() => {
+    if (!roomId) return
+    fetchMatchMessages(roomId, token)
+      .then((res) => setChatMessages(res.messages))
+      .catch(() => {})
+    chatSocket.subscribeMatch(roomId)
+  }, [roomId, token])
 
   const ratingMessage = useMemo(() => {
     if (!user || !ratingChange || matchType !== 'RANKED') return ''
@@ -100,6 +120,38 @@ export function GamePage() {
             </div>
             {snapshot.finished && <p className="hint">경기가 종료되었습니다.</p>}
             {ratingMessage && <p className="success">{ratingMessage}</p>}
+            <div className="chat-box">
+              <h3>매치 채팅</h3>
+              <div className="chat-messages">
+                {chatMessages.map((msg) => (
+                  <div key={msg.id} className="chat-line">
+                    <strong>{msg.senderNickname}</strong>: {msg.content}
+                  </div>
+                ))}
+                {chatMessages.length === 0 && <p className="hint">경기 중 채팅이 없습니다.</p>}
+              </div>
+              <div className="chat-input">
+                <input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="팀원과 대화하기"
+                />
+                <button
+                  className="button"
+                  type="button"
+                  onClick={() => {
+                    if (!roomId || !chatInput.trim()) return
+                    chatSocket.sendMatch(roomId, chatInput.trim())
+                    if (token) {
+                      sendMatchMessage(token, roomId, chatInput.trim())
+                    }
+                    setChatInput('')
+                  }}
+                >
+                  보내기
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           <p>게임 상태를 불러오는 중...</p>
