@@ -72,6 +72,15 @@ If you accidentally produce English comments/docs, you MUST rewrite them in Kore
   - Replace MariaDB with PostgreSQL as primary DB.
   - Use stacks that contradict `STACK_DESIGN.md` unless a human explicitly changes that file first.
 
+### 2.4 gradle-wrapper.jar binary file policy
+
+To ensure smooth PRs and repository hygiene:
+- If gradle-wrapper.jar is missing from the repository and is required for local build or test, you MAY temporarily obtain and use gradle-wrapper.jar for your local workflow.
+- After build and test are complete, you MUST delete gradle-wrapper.jar before submitting or merging your PR.
+- gradle-wrapper.jar MUST NOT be committed or remain in the repository except by explicit human instruction.
+
+This policy is to prevent unnecessary binary files in the repository while allowing local build/test flexibility.
+
 ---
 
 ## 3. Versioning rules
@@ -172,6 +181,7 @@ You MUST follow those patterns.
 Tests MUST reflect the behavior required by `VERSIONING.md` and `PRODUCT_SPEC.md`.
 
 ### Step 6. Run tests
+If gradle-wrapper.jar was temporarily added for build or test, you MUST delete gradle-wrapper.jar after all tests pass and before submitting your PR. Do not leave gradle-wrapper.jar in the repository unless explicitly instructed.
 
 1. Use the commands specified in:
    - `CLONE_GUIDE.md`
