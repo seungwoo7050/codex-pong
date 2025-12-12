@@ -13,13 +13,14 @@ import java.time.LocalDateTime;
 /**
  * [엔티티] backend/src/main/java/com/codexpong/backend/user/domain/User.java
  * 설명:
- *   - v0.2.0에서 계정 및 기본 프로필 정보를 보관하는 사용자 엔티티다.
- *   - 로그인 아이디, 암호화된 비밀번호, 닉네임, 아바타 경로와 생성/수정 시각을 관리한다.
- * 버전: v0.2.0
+ *   - 계정 및 기본 프로필 정보를 보관하는 사용자 엔티티다.
+ *   - v0.4.0에서 랭크 시스템 적용을 위해 레이팅 필드를 추가하고 기본값을 관리한다.
+ * 버전: v0.4.0
  * 관련 설계문서:
- *   - design/backend/v0.2.0-auth-and-profile.md
+ *   - design/backend/v0.4.0-ranking-system.md
  * 변경 이력:
  *   - v0.2.0: 사용자 엔티티 및 타임스탬프 관리 추가
+ *   - v0.4.0: 레이팅 필드와 접근자 추가
  */
 @Entity
 @Table(name = "users")
@@ -41,6 +42,9 @@ public class User {
     @Column(length = 255)
     private String avatarUrl;
 
+    @Column(nullable = false, columnDefinition = "int default 1200")
+    private Integer rating;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -55,6 +59,11 @@ public class User {
         this.password = password;
         this.nickname = nickname;
         this.avatarUrl = avatarUrl;
+        this.rating = 1200;
+    }
+
+    public void updateRating(int nextRating) {
+        this.rating = nextRating;
     }
 
     public void updateProfile(String nickname, String avatarUrl) {
@@ -67,6 +76,9 @@ public class User {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (this.rating == null) {
+            this.rating = 1200;
+        }
     }
 
     @PreUpdate
@@ -92,6 +104,10 @@ public class User {
 
     public String getAvatarUrl() {
         return avatarUrl;
+    }
+
+    public Integer getRating() {
+        return rating;
     }
 
     public LocalDateTime getCreatedAt() {

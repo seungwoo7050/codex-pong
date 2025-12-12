@@ -22,9 +22,9 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
  * 설명:
  *   - 빠른 대전으로 생성된 경기 방에 대한 WebSocket 연결을 관리한다.
  *   - 클라이언트 입력을 GameRoomService로 전달하고, 초기 상태를 전송한다.
- * 버전: v0.3.0
+ * 버전: v0.4.0
  * 관련 설계문서:
- *   - design/realtime/v0.3.0-game-loop-and-events.md
+ *   - design/realtime/v0.4.0-ranking-aware-events.md
  */
 @Component
 public class GameWebSocketHandler extends TextWebSocketHandler {
@@ -56,7 +56,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
         GameRoom room = roomOpt.get();
         gameRoomService.registerSession(room, user.id(), session);
-        sendServerMessage(session, new GameRoomService.GameServerMessage("READY", room.currentSnapshot()));
+        sendServerMessage(session, new GameRoomService.GameServerMessage("READY", room.currentSnapshot(),
+                room.getMatchType().name(), null));
     }
 
     @Override

@@ -6,9 +6,9 @@ import { UserProfile } from '../../shared/types/user'
  * 설명:
  *   - 인증 및 프로필 관련 REST 호출을 담당한다.
  *   - JWT 발급과 프로필 조회를 단순화한 헬퍼 함수 모음이다.
- * 버전: v0.2.0
+ * 버전: v0.4.0
  * 관련 설계문서:
- *   - design/frontend/v0.2.0-auth-and-profile-ui.md
+ *   - design/frontend/v0.4.0-ranking-and-leaderboard-ui.md
  */
 export interface AuthResponse {
   token: string
