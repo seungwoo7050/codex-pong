@@ -210,6 +210,26 @@ input {
   margin: 4px 0 0;
 }
 
+.bracket {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.bracket-round {
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 12px;
+  background: #0b1220;
+}
+
+.bracket-match {
+  border: 1px dashed #1f2937;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
 .game-area {
   display: grid;
   gap: 12px;

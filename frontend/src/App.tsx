@@ -7,6 +7,7 @@ import { RegisterPage } from './pages/RegisterPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { LeaderboardPage } from './pages/LeaderboardPage'
 import { FriendsPage } from './pages/FriendsPage'
+import { TournamentPage } from './pages/TournamentPage'
 import { useAuth } from './features/auth/AuthProvider'
 import { ProtectedRoute } from './features/auth/ProtectedRoute'
 
@@ -39,6 +40,7 @@ function App() {
           <Link to="/lobby">로비</Link>
           <Link to="/game">게임</Link>
           <Link to="/leaderboard">리더보드</Link>
+          <Link to="/tournaments">토너먼트</Link>
           {status === 'authenticated' ? (
             <>
               <Link to="/friends">친구</Link>
@@ -89,6 +91,14 @@ function App() {
           element={(
             <ProtectedRoute>
               <LeaderboardPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/tournaments"
+          element={(
+            <ProtectedRoute>
+              <TournamentPage />
             </ProtectedRoute>
           )}
         />

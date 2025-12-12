@@ -1,4 +1,4 @@
-# CLONE_GUIDE (v0.6.0)
+# CLONE_GUIDE (v0.7.0)
 
 ## 1. 목적
 - v0.6.0 기준 실시간 1:1 게임, 랭크 큐/리더보드, 친구/차단/초대, DM/로비/매치 채팅 흐름을 실행하기 위한 안내서다.
@@ -80,9 +80,15 @@ npm install
 npm run build
 ```
 
-## 8. 버전별 메모 (v0.6.0)
-- 주요 기능: 일반/랭크 대전, 랭크 레이팅, 리더보드 + 친구 목록/요청/차단/초대, 친구 초대 후 게임 방 진입, DM/로비/매치 채팅.
+## 8. 버전별 메모 (v0.7.0)
+- 주요 기능: 일반/랭크 대전, 랭크 레이팅, 리더보드 + 친구 목록/요청/차단/초대, 친구 초대 후 게임 방 진입, DM/로비/매치 채팅, **단일 제거 토너먼트 생성/참여/진행**.
 - 매칭 절차: 로비에서 원하는 큐 선택 → 일반전 `/api/match/quick`, 랭크전 `/api/match/ranked` 티켓 발급 → roomId로 `/ws/game` 연결.
+- 토너먼트 절차:
+  - 생성: `/api/tournaments` POST (name, maxParticipants=4/8/16)
+  - 참여: `/api/tournaments/{id}/join` POST
+  - 시작: `/api/tournaments/{id}/start` POST (생성자 전용, 정원 충족 시)
+  - 진행: 응답/조회 `/api/tournaments/{id}`로 브래킷 확인, 매치 roomId로 `/ws/game` 접속
+  - 실시간 알림: `/ws/tournament?token=<JWT>`로 연결해 `TOURNAMENT_MATCH_READY`, `TOURNAMENT_UPDATED` 등을 수신
 - 소셜/채팅 절차:
   - 친구 요청: `/api/social/friend-requests` POST (targetUsername), 수락/거절: `/api/social/friend-requests/{id}/accept|reject`
   - 차단: `/api/social/blocks` POST, 해제: `/api/social/blocks/{userId}` DELETE
