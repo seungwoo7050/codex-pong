@@ -56,6 +56,9 @@ docker compose up -d
   - 소셜 WebSocket: ws://localhost/ws/social?token=<JWT> (친구 요청/초대 이벤트 구독용)
   - 채팅 WebSocket: ws://localhost/ws/chat?token=<JWT> (로비 기본 구독, DM/매치 명령 전송)
   - 토너먼트 WebSocket: ws://localhost/ws/tournament?token=<JWT> (토너먼트 알림 구독)
+  - Swagger/OpenAPI: 문서 JSON http://localhost:8080/v3/api-docs
+  - Swagger UI: http://localhost:8080/swagger-ui
+  - Swagger UI 인증: 우측 상단 Authorize 버튼에서 Bearer 토큰 입력
   - OAuth 로그인: 프런트 로그인 화면에서 카카오/네이버 액세스 토큰 입력 → `/api/auth/oauth/{provider}` 호출
   - REST 예시: `/api/auth/register`로 회원가입 후 `/api/match/quick`으로 일반전 티켓, `/api/match/ranked`로 랭크전 티켓 발급, `/api/social/friend-requests`로 친구 요청 발송, `/api/match/ongoing`으로 관전 대상 확인
   - 운영/모니터링:
