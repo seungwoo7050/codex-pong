@@ -28,6 +28,14 @@ jobs:
         with:
           gradle-version: 8.14.3
 
+      - name: ffmpeg 설치
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Python 3.12 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: 프런트엔드 의존성 설치
         working-directory: frontend
         run: npm ci

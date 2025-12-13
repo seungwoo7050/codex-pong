@@ -55,7 +55,7 @@ public class JobEventPublisher {
     public void publishCompleted(Long userId, JobResultMessage message) {
         publish(userId, "job.completed", Map.of(
                 "jobId", message.jobId(),
-                "resultUri", message.resultUri(),
+                "downloadUrl", "/api/jobs/" + message.jobId() + "/result",
                 "checksum", message.checksum()
         ));
     }

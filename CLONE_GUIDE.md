@@ -36,6 +36,7 @@ cd codex-pong
   - `AUTH_NAVER_PROFILE_URI` (선택, 기본 `https://openapi.naver.com/v1/nid/me`)
   - `REPLAY_STORAGE_PATH` (기본 `${user.dir}/build/replays`, Docker Compose 시 `/data/replays` named volume)
   - `REPLAY_RETENTION_MAX_PER_USER` (기본 20)
+  - `JOB_EXPORT_PATH` (기본 `${REPLAY_STORAGE_PATH}/exports`, 워커와 백엔드가 동일 루트 사용)
   - `REDIS_HOST=redis`, `REDIS_PORT=6379`
   - 잡 큐: `JOB_QUEUE_ENABLED=true`, `JOB_QUEUE_REQUEST_STREAM=job.requests`, `JOB_QUEUE_PROGRESS_STREAM=job.progress`, `JOB_QUEUE_RESULT_STREAM=job.results`, `JOB_QUEUE_CONSUMER_GROUP=replay-jobs`
 - 프런트엔드
@@ -122,7 +123,14 @@ npm install
 npm run build
 ```
 
+### 7.4 워커 테스트
+```bash
+pip install -r worker/requirements.txt
+REQUIRE_FFMPEG=1 python -m unittest discover -s worker -p "test_*.py"
+```
+- ffmpeg/ffprobe가 PATH에 없으면 실패하며, 테스트는 임시 디렉터리에서 MP4/PNG를 생성한 뒤 자동 정리한다.
+
 ## 8. 버전별 메모 (v0.12.0)
 - 주요 기능: 기존 일반/랭크 대전, 리더보드, 친구/차단/초대, DM/로비/매치 채팅, 단일 제거 토너먼트, 관전 모드, 관리자 API/모니터링, 카카오/네이버 OAuth, KST/utf8mb4 정비, 리플레이 녹화/뷰어 + **잡 기반 리플레이 내보내기(MP4/썸네일) 및 진행률 WebSocket**.
-- 리플레이 내보내기 절차: 리플레이 뷰어 → 내보내기 버튼 클릭 → `jobId` 반환 → JobDrawer에서 실시간 진행률 확인 → 완료 후 다운로드.
-- 큐/워커: Redis Streams(`job.requests/progress/results`) + `replay-worker` 컨테이너, ffmpeg CLI 필수. 데드레터 스트림 `job.deadletter`를 점검해 재시도할 수 있다.
+- 리플레이 내보내기 절차: 리플레이 뷰어 → 내보내기 버튼 클릭 → `jobId` 반환 → JobDrawer에서 실시간 진행률 확인 → 완료 후 다운로드. 워커는 JSONL 스냅샷을 직접 렌더링해 실제 경기 흐름이 반영된 MP4/PNG를 생성한다.
+- 큐/워커: Redis Streams(`job.requests/progress/results`) + `replay-worker` 컨테이너, ffmpeg CLI 필수. 데드레터 스트림 `job.deadletter`를 점검해 재시도할 수 있다. 출력 경로는 `JOB_EXPORT_PATH` 하위만 허용된다.
