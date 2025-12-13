@@ -8,6 +8,9 @@
 ## 2. 사전 준비물
 - Git
 - Docker / Docker Compose
+- Docker 데몬 권한: compose 실행 전 `docker version`/`docker compose version`으로 데몬 연결을 확인한다. CI나 제한된 샌드박스에서는
+  `dockerd` 기동에 커널 권한(CAP_NET_ADMIN 등)이 없어 실패할 수 있으므로, 그 경우 호스트 제공 도커 환경을 사용하거나 권한이
+  허용된 런너에서 실행해야 한다.
 - Node.js 18 (프런트엔드 로컬 실행 시)
 - JDK 17 (백엔드 로컬 실행 시)
 - ffmpeg CLI (로컬에서 워커를 단독 실행할 때 필요, Docker Compose 사용 시 자동 포함)
