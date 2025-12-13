@@ -6,25 +6,8 @@ import { useQuickMatch } from '../hooks/useQuickMatch'
 import { useChatSocket } from '../hooks/useChatSocket'
 import { apiFetch } from '../shared/api/client'
 import { ChatMessage } from '../shared/types/chat'
+import { MatchResult } from '../shared/types/match'
 import { toTierLabel } from '../shared/utils/rating'
-
-interface GameResult {
-  id: number
-  playerAId: number
-  playerANickname: string
-  playerBId: number
-  playerBNickname: string
-  scoreA: number
-  scoreB: number
-  matchType: 'NORMAL' | 'RANKED'
-  ratingChangeA: number
-  ratingChangeB: number
-  ratingAfterA: number
-  ratingAfterB: number
-  roomId: string
-  startedAt: string
-  finishedAt: string
-}
 
 /**
  * [페이지] frontend/src/pages/LobbyPage.tsx
@@ -41,7 +24,7 @@ export function LobbyPage() {
  const navigate = useNavigate()
  const normalQueue = useQuickMatch('normal', token)
  const rankedQueue = useQuickMatch('ranked', token)
- const [results, setResults] = useState<GameResult[]>([])
+  const [results, setResults] = useState<MatchResult[]>([])
  const [error, setError] = useState('')
   const [lobbyMessages, setLobbyMessages] = useState<ChatMessage[]>([])
   const [lobbyInput, setLobbyInput] = useState('')

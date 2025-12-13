@@ -9,6 +9,7 @@ import { LeaderboardPage } from './pages/LeaderboardPage'
 import { FriendsPage } from './pages/FriendsPage'
 import { TournamentPage } from './pages/TournamentPage'
 import { SpectatorPage } from './pages/SpectatorPage'
+import { AdminPage } from './pages/AdminPage'
 import { useAuth } from './features/auth/AuthProvider'
 import { ProtectedRoute } from './features/auth/ProtectedRoute'
 
@@ -45,6 +46,7 @@ function App() {
           <Link to="/spectate">관전</Link>
           {status === 'authenticated' ? (
             <>
+              <Link to="/admin">운영</Link>
               <Link to="/friends">친구</Link>
               <Link to="/profile">내 프로필</Link>
               <button className="link-button" type="button" onClick={logout}>
@@ -117,6 +119,14 @@ function App() {
           element={(
             <ProtectedRoute>
               <SpectatorPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/admin"
+          element={(
+            <ProtectedRoute>
+              <AdminPage />
             </ProtectedRoute>
           )}
         />

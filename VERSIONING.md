@@ -431,6 +431,8 @@ Allow users to watch ongoing matches.
 
 ## 11. v0.9.0 – Admin/ops tooling & monitoring stack
 
+**Status**: completed (admin APIs, monitoring dashboard, structured logging)
+
 **Goal**
 
 Add minimal yet useful operations features and monitoring.

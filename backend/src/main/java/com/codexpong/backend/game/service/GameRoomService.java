@@ -32,10 +32,12 @@ import org.springframework.web.socket.WebSocketSession;
  *   - 경기 방 생성/관리와 틱 루프 실행, 상태 브로드캐스트를 담당한다.
  *   - 방이 종료되면 GameResultService를 통해 DB에 기록한다.
  *   - v0.8.0에서는 관전자 연결 제한과 지연 브로드캐스트를 포함한 관전 지원을 수행한다.
- * 버전: v0.8.0
+ * 버전: v0.9.0
  * 관련 설계문서:
  *   - design/backend/v0.8.0-spectator-mode.md
  *   - design/realtime/v0.8.0-spectator-events.md
+ * 변경 이력:
+ *   - v0.9.0: 활성 경기/관전자 계수 메트릭 노출 함수 추가
  */
 @Service
 public class GameRoomService {
@@ -125,6 +127,24 @@ public class GameRoomService {
             ));
         }
         return Collections.unmodifiableList(liveRooms);
+    }
+
+    /**
+     * 설명:
+     *   - 모니터링을 위해 현재 메모리에 존재하는 활성 경기 방 수를 반환한다.
+     */
+    public int activeRoomCount() {
+        return rooms.size();
+    }
+
+    /**
+     * 설명:
+     *   - 전체 관전자 세션 수를 합산해 관리자 통계에 제공한다.
+     */
+    public int totalSpectatorCount() {
+        return spectatorSessions.values().stream()
+                .mapToInt(Map::size)
+                .sum();
     }
 
     public int spectatorCount(String roomId) {
