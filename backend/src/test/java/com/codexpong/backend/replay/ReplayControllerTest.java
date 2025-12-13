@@ -11,6 +11,8 @@ import com.codexpong.backend.game.domain.GameRoom;
 import com.codexpong.backend.game.domain.MatchType;
 import com.codexpong.backend.game.engine.model.GameSnapshot;
 import com.codexpong.backend.chat.repository.ChatMessageRepository;
+import com.codexpong.backend.chat.repository.ChatMuteRepository;
+import com.codexpong.backend.job.JobRepository;
 import com.codexpong.backend.user.domain.User;
 import com.codexpong.backend.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,11 +63,19 @@ class ReplayControllerTest {
     @Autowired
     private ChatMessageRepository chatMessageRepository;
 
+    @Autowired
+    private ChatMuteRepository chatMuteRepository;
+
+    @Autowired
+    private JobRepository jobRepository;
+
     @BeforeEach
     void cleanUp() {
+        jobRepository.deleteAll();
         replayRepository.deleteAll();
         gameResultRepository.deleteAll();
         chatMessageRepository.deleteAll();
+        chatMuteRepository.deleteAll();
         userRepository.deleteAll();
     }
 
