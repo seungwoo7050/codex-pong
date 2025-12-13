@@ -39,6 +39,7 @@ public class JobService {
     private final JobEventPublisher jobEventPublisher;
     private final JobExportProperties exportProperties;
     private Path exportBasePath;
+    private Path exportBaseRealPath;
 
     public JobService(JobRepository jobRepository, ReplayRepository replayRepository,
             UserRepository userRepository, JobQueuePublisher jobQueuePublisher,
@@ -56,7 +57,9 @@ public class JobService {
         exportBasePath = Paths.get(exportProperties.getPath()).toAbsolutePath().normalize();
         try {
             Files.createDirectories(exportBasePath);
+            exportBaseRealPath = exportBasePath.toRealPath();
         } catch (Exception ignored) {
+            exportBaseRealPath = exportBasePath;
         }
     }
 
@@ -111,7 +114,10 @@ public class JobService {
         if (job.getStatus() != JobStatus.SUCCEEDED || job.getResultUri() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "완료된 잡만 다운로드할 수 있습니다.");
         }
-        Path path = Paths.get(job.getResultUri());
+        Path path = Paths.get(job.getResultUri()).toAbsolutePath().normalize();
+        if (!isWithinExportRoot(path)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용된 경로 밖의 파일은 제공하지 않습니다.");
+        }
         if (!Files.exists(path)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "결과 파일을 찾을 수 없습니다.");
         }
@@ -137,7 +143,17 @@ public class JobService {
                 return;
             }
             if (message.status() == JobStatus.SUCCEEDED) {
-                job.succeed(message.resultUri(), message.checksum());
+                Path resultPath = Paths.get(message.resultUri()).toAbsolutePath().normalize();
+                if (!isWithinExportRoot(resultPath)) {
+                    JobResultMessage rejected = new JobResultMessage(message.jobId(), JobStatus.FAILED,
+                            resultPath.toString(), message.checksum(), "INVALID_OUTPUT_PATH",
+                            "허용된 출력 루트 밖의 결과입니다.");
+                    job.fail(rejected.errorCode(), rejected.errorMessage());
+                    jobRepository.save(job);
+                    jobEventPublisher.publishFailed(job.getOwner().getId(), rejected);
+                    return;
+                }
+                job.succeed(resultPath.toString(), message.checksum());
                 jobRepository.save(job);
                 jobEventPublisher.publishCompleted(job.getOwner().getId(), message);
                 return;
@@ -180,6 +196,23 @@ public class JobService {
 
     private boolean isTerminal(JobStatus status) {
         return status == JobStatus.SUCCEEDED || status == JobStatus.FAILED || status == JobStatus.CANCELLED;
+    }
+
+    private boolean isWithinExportRoot(Path path) {
+        try {
+            Path normalized = path.toAbsolutePath().normalize();
+            if (!normalized.startsWith(exportBasePath)) {
+                return false;
+            }
+            Path realBase = exportBaseRealPath != null ? exportBaseRealPath : exportBasePath.toRealPath();
+            if (Files.exists(normalized)) {
+                Path realTarget = normalized.toRealPath();
+                return realTarget.startsWith(realBase);
+            }
+            return normalized.startsWith(realBase);
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private String buildOutputPath(Job job) {

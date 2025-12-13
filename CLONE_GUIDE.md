@@ -8,6 +8,9 @@
 ## 2. 사전 준비물
 - Git
 - Docker / Docker Compose
+- Docker 데몬 권한: compose 실행 전 `docker version`/`docker compose version`으로 데몬 연결을 확인한다. CI나 제한된 샌드박스에서는
+  `dockerd` 기동에 커널 권한(CAP_NET_ADMIN 등)이 없어 실패할 수 있으므로, 그 경우 호스트 제공 도커 환경을 사용하거나 권한이
+  허용된 런너에서 실행해야 한다.
 - Node.js 18 (프런트엔드 로컬 실행 시)
 - JDK 17 (백엔드 로컬 실행 시)
 - ffmpeg CLI (로컬에서 워커를 단독 실행할 때 필요, Docker Compose 사용 시 자동 포함)
@@ -36,6 +39,7 @@ cd codex-pong
   - `AUTH_NAVER_PROFILE_URI` (선택, 기본 `https://openapi.naver.com/v1/nid/me`)
   - `REPLAY_STORAGE_PATH` (기본 `${user.dir}/build/replays`, Docker Compose 시 `/data/replays` named volume)
   - `REPLAY_RETENTION_MAX_PER_USER` (기본 20)
+  - `JOB_EXPORT_PATH` (기본 `${REPLAY_STORAGE_PATH}/exports`, 워커와 백엔드가 동일 루트 사용)
   - `REDIS_HOST=redis`, `REDIS_PORT=6379`
   - 잡 큐: `JOB_QUEUE_ENABLED=true`, `JOB_QUEUE_REQUEST_STREAM=job.requests`, `JOB_QUEUE_PROGRESS_STREAM=job.progress`, `JOB_QUEUE_RESULT_STREAM=job.results`, `JOB_QUEUE_CONSUMER_GROUP=replay-jobs`
 - 프런트엔드
@@ -122,7 +126,14 @@ npm install
 npm run build
 ```
 
+### 7.4 워커 테스트
+```bash
+pip install -r worker/requirements.txt
+REQUIRE_FFMPEG=1 python -m unittest discover -s worker -p "test_*.py"
+```
+- ffmpeg/ffprobe가 PATH에 없으면 실패하며, 테스트는 임시 디렉터리에서 MP4/PNG를 생성한 뒤 자동 정리한다.
+
 ## 8. 버전별 메모 (v0.12.0)
 - 주요 기능: 기존 일반/랭크 대전, 리더보드, 친구/차단/초대, DM/로비/매치 채팅, 단일 제거 토너먼트, 관전 모드, 관리자 API/모니터링, 카카오/네이버 OAuth, KST/utf8mb4 정비, 리플레이 녹화/뷰어 + **잡 기반 리플레이 내보내기(MP4/썸네일) 및 진행률 WebSocket**.
-- 리플레이 내보내기 절차: 리플레이 뷰어 → 내보내기 버튼 클릭 → `jobId` 반환 → JobDrawer에서 실시간 진행률 확인 → 완료 후 다운로드.
-- 큐/워커: Redis Streams(`job.requests/progress/results`) + `replay-worker` 컨테이너, ffmpeg CLI 필수. 데드레터 스트림 `job.deadletter`를 점검해 재시도할 수 있다.
+- 리플레이 내보내기 절차: 리플레이 뷰어 → 내보내기 버튼 클릭 → `jobId` 반환 → JobDrawer에서 실시간 진행률 확인 → 완료 후 다운로드. 워커는 JSONL 스냅샷을 직접 렌더링해 실제 경기 흐름이 반영된 MP4/PNG를 생성한다.
+- 큐/워커: Redis Streams(`job.requests/progress/results`) + `replay-worker` 컨테이너, ffmpeg CLI 필수. 데드레터 스트림 `job.deadletter`를 점검해 재시도할 수 있다. 출력 경로는 `JOB_EXPORT_PATH` 하위만 허용된다.

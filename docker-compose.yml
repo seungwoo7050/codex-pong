@@ -41,6 +41,7 @@ services:
       - JOB_QUEUE_PROGRESS_STREAM=job.progress
       - JOB_QUEUE_RESULT_STREAM=job.results
       - JOB_QUEUE_CONSUMER_GROUP=replay-jobs
+      - JOB_EXPORT_PATH=/data/replays/exports
       - TZ=Asia/Seoul
     ports:
       - "8080:8080"
@@ -71,6 +72,7 @@ services:
       - JOB_QUEUE_RESULT_STREAM=job.results
       - JOB_QUEUE_CONSUMER_GROUP=replay-jobs
       - WORKER_ID=replay-worker-1
+      - JOB_EXPORT_PATH=/data/replays/exports
       - TZ=Asia/Seoul
     depends_on:
       - redis

@@ -91,8 +91,11 @@ public class JobController {
         if (file.toString().endsWith(".mp4")) {
             return MediaType.valueOf("video/mp4");
         }
-        if (file.toString().endsWith(".png") || file.toString().endsWith(".jpg")) {
+        if (file.toString().endsWith(".png")) {
             return MediaType.IMAGE_PNG;
+        }
+        if (file.toString().endsWith(".jpg") || file.toString().endsWith(".jpeg")) {
+            return MediaType.IMAGE_JPEG;
         }
         return MediaType.APPLICATION_OCTET_STREAM;
     }
