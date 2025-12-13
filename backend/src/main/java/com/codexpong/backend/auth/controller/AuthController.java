@@ -2,9 +2,11 @@ package com.codexpong.backend.auth.controller;
 
 import com.codexpong.backend.auth.dto.AuthResponse;
 import com.codexpong.backend.auth.dto.LoginRequest;
+import com.codexpong.backend.auth.dto.OAuthLoginRequest;
 import com.codexpong.backend.auth.dto.RegisterRequest;
 import com.codexpong.backend.auth.model.AuthenticatedUser;
 import com.codexpong.backend.auth.service.AuthService;
+import com.codexpong.backend.auth.service.OAuthLoginService;
 import jakarta.validation.Valid;
 import java.util.Map;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,20 +20,23 @@ import org.springframework.web.bind.annotation.RestController;
  * 설명:
  *   - 회원가입, 로그인, 로그아웃 API를 제공해 프런트엔드 인증 흐름을 완성한다.
  *   - JWT를 이용해 발급된 토큰과 사용자 정보를 반환하며, 로그아웃은 클라이언트 토큰 폐기를 안내한다.
- * 버전: v0.2.0
+ * 버전: v0.10.0
  * 관련 설계문서:
- *   - design/backend/v0.2.0-auth-and-profile.md
+ *   - design/backend/v0.10.0-kor-auth-and-locale.md
  * 변경 이력:
  *   - v0.2.0: 인증 API 최초 구현
+ *   - v0.10.0: 카카오/네이버 OAuth 엔드포인트 추가 및 시간/로케일 명시
  */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
+    private final OAuthLoginService oauthLoginService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, OAuthLoginService oauthLoginService) {
         this.authService = authService;
+        this.oauthLoginService = oauthLoginService;
     }
 
     /**
@@ -58,6 +63,32 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    /**
+     * 설명:
+     *   - 카카오 액세스 토큰으로 프로필을 확인하고 로컬 계정에 연동한다.
+     * 입력:
+     *   - OAuthLoginRequest: accessToken 필드
+     * 출력:
+     *   - AuthResponse: 토큰과 프로필 정보
+     */
+    @PostMapping("/oauth/kakao")
+    public AuthResponse kakaoLogin(@Valid @RequestBody OAuthLoginRequest request) {
+        return oauthLoginService.loginWithKakao(request.accessToken());
+    }
+
+    /**
+     * 설명:
+     *   - 네이버 액세스 토큰으로 프로필을 확인하고 로컬 계정에 연동한다.
+     * 입력:
+     *   - OAuthLoginRequest: accessToken 필드
+     * 출력:
+     *   - AuthResponse: 토큰과 프로필 정보
+     */
+    @PostMapping("/oauth/naver")
+    public AuthResponse naverLogin(@Valid @RequestBody OAuthLoginRequest request) {
+        return oauthLoginService.loginWithNaver(request.accessToken());
     }
 
     /**

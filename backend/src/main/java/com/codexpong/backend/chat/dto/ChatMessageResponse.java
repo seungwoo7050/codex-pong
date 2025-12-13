@@ -1,16 +1,17 @@
 package com.codexpong.backend.chat.dto;
 
 import com.codexpong.backend.chat.domain.ChatMessage;
-import java.time.LocalDateTime;
+import com.codexpong.backend.common.KstDateTime;
+import java.time.OffsetDateTime;
 
 /**
  * [응답 DTO] backend/src/main/java/com/codexpong/backend/chat/dto/ChatMessageResponse.java
  * 설명:
  *   - 채널별 메시지를 클라이언트로 전달하기 위한 표현 객체다.
  *   - WebSocket과 REST 응답에서 동일하게 사용한다.
- * 버전: v0.6.0
+ * 버전: v0.10.0
  * 관련 설계문서:
- *   - design/backend/v0.6.0-chat-and-channels.md
+ *   - design/backend/v0.10.0-kor-auth-and-locale.md
  */
 public class ChatMessageResponse {
 
@@ -21,7 +22,7 @@ public class ChatMessageResponse {
     private String senderNickname;
     private Long recipientId;
     private String content;
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     public ChatMessageResponse(ChatMessage message) {
         this.id = message.getId();
@@ -31,7 +32,7 @@ public class ChatMessageResponse {
         this.senderNickname = message.getSender().getNickname();
         this.recipientId = message.getRecipient() != null ? message.getRecipient().getId() : null;
         this.content = message.getContent();
-        this.createdAt = message.getCreatedAt();
+        this.createdAt = KstDateTime.toOffset(message.getCreatedAt());
     }
 
     public Long getId() {
@@ -62,7 +63,7 @@ public class ChatMessageResponse {
         return content;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 }

@@ -16,12 +16,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * 변경 이력:
  *   - v0.2.0: 사용자 리포지토리 인터페이스 추가
  *   - v0.4.0: 레이팅 순위 조회 쿼리 추가
+ *   - v0.10.0: OAuth 공급자 조회 메서드 추가
  */
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByUsername(String username);
 
     boolean existsByUsername(String username);
+
+    Optional<User> findByAuthProviderAndProviderUserId(String authProvider, String providerUserId);
 
     List<User> findTop20ByOrderByRatingDesc();
 }

@@ -153,7 +153,7 @@ export function LobbyPage() {
                   <small>레이팅 변화: {formatDelta(result.ratingChangeA)} / {formatDelta(result.ratingChangeB)}</small>
                 </div>
               )}
-              <small>{new Date(result.finishedAt).toLocaleString('ko-KR')}</small>
+              <small>{new Date(result.finishedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}</small>
             </li>
           ))}
         </ul>

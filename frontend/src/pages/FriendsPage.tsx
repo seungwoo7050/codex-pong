@@ -23,6 +23,8 @@ import { useLiveMatches } from '../hooks/useLiveMatches'
 import { ChatMessage } from '../shared/types/chat'
 import { FriendRequestItem, FriendSummary, GameInvite } from '../shared/types/social'
 
+const formatKst = (value: string) => new Date(value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
+
 /**
  * [페이지] frontend/src/pages/FriendsPage.tsx
  * 설명:
@@ -197,7 +199,7 @@ export function FriendsPage() {
             {friend.online ? '온라인' : '오프라인'}
           </span>
         </div>
-        <small>친구 등록일: {new Date(friend.since).toLocaleString('ko-KR')}</small>
+        <small>친구 등록일: {formatKst(friend.since)}</small>
       </div>
       <div className="friend-actions">
         <button className="button" type="button" onClick={() => inviteMutation.mutate(friend.userId)}>
@@ -228,7 +230,7 @@ export function FriendsPage() {
         <strong>{incoming ? invite.senderNickname : '대상 ID: ' + invite.receiverId}</strong>
         <span className="badge">{invite.status === 'PENDING' ? '대기' : invite.status}</span>
       </div>
-      <small>{new Date(invite.createdAt).toLocaleString('ko-KR')}</small>
+      <small>{formatKst(invite.createdAt)}</small>
       {incoming && invite.status === 'PENDING' && (
         <div className="actions">
           <button className="button" type="button" onClick={() => handleAcceptInvite(invite.id)}>
@@ -305,7 +307,7 @@ export function FriendsPage() {
                   <span>{req.senderNickname}</span>
                   <span className="badge">{req.status}</span>
                 </div>
-                <small>{new Date(req.createdAt).toLocaleString('ko-KR')}</small>
+                <small>{formatKst(req.createdAt)}</small>
                 {req.status === 'PENDING' && (
                   <div className="actions">
                     <button className="button" type="button" onClick={() => handleAcceptRequest(req)}>
@@ -329,7 +331,7 @@ export function FriendsPage() {
                   <span>대상 ID: {req.receiverId}</span>
                   <span className="badge">{req.status}</span>
                 </div>
-                <small>{new Date(req.createdAt).toLocaleString('ko-KR')}</small>
+                <small>{formatKst(req.createdAt)}</small>
               </li>
             ))}
           </ul>
@@ -368,7 +370,7 @@ export function FriendsPage() {
                   해제
                 </button>
               </div>
-              <small>{new Date(block.blockedAt).toLocaleString('ko-KR')}</small>
+              <small>{formatKst(block.blockedAt)}</small>
             </li>
           ))}
         </ul>

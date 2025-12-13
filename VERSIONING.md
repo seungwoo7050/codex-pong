@@ -470,6 +470,8 @@ Add minimal yet useful operations features and monitoring.
 
 ## 12. v0.10.0 – Korean-market refinements
 
+**Status**: completed
+
 **Goal**
 
 Align UX, auth, and infra more closely with Korean usage patterns.
