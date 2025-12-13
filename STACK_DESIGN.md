@@ -21,7 +21,7 @@ We design a **monolithic-but-modular** backend with a separate SPA frontend and 
   - Talks to backend via REST/JSON + WebSocket
 - **Backend**
   - Spring Boot (Java 17 or Kotlin)
-  - REST API + WebSocket/STOMP endpoint
+  - REST API + WebSocket endpoint (STOMP or raw WebSocket; transport choice is fixed in `design/realtime/initial-design.md`)
   - Modular domain layers (User, Auth, Game, Matchmaking, Ranking, Social, Admin, etc.)
 - **Data stores**
   - MariaDB (primary relational store)

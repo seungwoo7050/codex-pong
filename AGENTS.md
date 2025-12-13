@@ -152,6 +152,14 @@ Before writing code, you MUST:
 
 You do **not** write the detailed design doc yet; that is done **after** code and tests are complete.
 
+**Exception (external contract lock-in):**
+- If you are introducing or changing any **external contract** that other modules depend on, you MUST first create/update a **minimal contract section** *before* implementing:
+  - REST API request/response shapes (including error envelope)
+  - WebSocket endpoint paths and authentication handshakes
+  - Realtime event names, payload schemas, and message flows
+  - Infra-visible ports / env vars / reverse-proxy routes
+- Keep this “contract doc” minimal (interfaces + rules only). Detailed internal design is still written/updated in Step 7 after tests pass.
+
 ### Step 4. Implement code (with Korean comments)
 
 1. Modify or create source files according to `CODING_GUIDE.md`:
@@ -193,9 +201,10 @@ If gradle-wrapper.jar was temporarily added for build or test, you MUST delete g
 
 You MUST NOT disable, comment out, or delete failing tests just to make the test run “green”.
 
-### Step 7. Update documentation (only after tests pass)
+### Step 7. Update documentation (after tests pass)
 
 Once all tests pass for the target version:
+- If you created/updated any minimal contract docs in Step 3, reconcile them with the final implementation here.
 
 1. **Design documents** (`design/`):
    - If no design doc exists yet for this version and domain:

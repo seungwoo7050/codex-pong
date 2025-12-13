@@ -1,8 +1,9 @@
 # CLONE_GUIDE (v0.7.0)
 
 ## 1. 목적
-- v0.6.0 기준 실시간 1:1 게임, 랭크 큐/리더보드, 친구/차단/초대, DM/로비/매치 채팅 흐름을 실행하기 위한 안내서다.
-- 백엔드/프런트엔드/인프라와 JWT 시크릿, WebSocket 연결, 랭크 레이팅, 소셜/채팅 API를 한 번에 검증한다.
+- v0.7.0 기준 실시간 1:1 게임, 랭크 큐/리더보드, 친구/차단/초대, DM/로비/매치 채팅, 단일 제거 토너먼트 흐름을 실행하기 위한 안내서다.
+- 백엔드/프런트엔드/인프라와 JWT 시크릿, WebSocket 연결, 랭크 레이팅, 소셜/채팅/토너먼트 API를 한 번에 검증한다.
+- 본 문서는 `/ws/*` 경로를 사용하는 **raw WebSocket(STOMP 미사용)** 전제를 따른다. 전송 방식 변경 시 `design/realtime/initial-design.md` 및 본 문서를 함께 갱신한다.
 
 ## 2. 사전 준비물
 - Git
@@ -46,6 +47,7 @@ docker compose up -d
   - 게임 WebSocket: ws://localhost/ws/game?roomId=<매칭된-방>&token=<JWT>
   - 소셜 WebSocket: ws://localhost/ws/social?token=<JWT> (친구 요청/초대 이벤트 구독용)
   - 채팅 WebSocket: ws://localhost/ws/chat?token=<JWT> (로비 기본 구독, DM/매치 명령 전송)
+  - 토너먼트 WebSocket: ws://localhost/ws/tournament?token=<JWT> (토너먼트 알림 구독)
   - REST 예시: `/api/auth/register`로 회원가입 후 `/api/match/quick`으로 일반전 티켓, `/api/match/ranked`로 랭크전 티켓 발급, `/api/social/friend-requests`로 친구 요청 발송
 
 ## 6. 개별 서비스 로컬 실행 (선택)

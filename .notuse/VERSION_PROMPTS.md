@@ -556,7 +556,7 @@ AGENTS.md 개발 루프를 따라 다음을 수행해라:
   - WebSocket 재연결/에러 처리 정책을 “코드 + 문서”로 고정한다.
 
 - 백엔드(UTF-8 회귀):
-  - v0.10.0에서 요구한 `utf8mb4 end-to-end`를 테스트로 고정한다. :contentReference[oaicite:1]{index=1}
+  - v0.10.0에서 요구한 `utf8mb4 end-to-end`를 테스트로 고정한다.
   - 회귀 테스트에 반드시 포함:
     - 한글 + 이모지 닉네임
     - REST payload
