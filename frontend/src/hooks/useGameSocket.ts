@@ -7,17 +7,24 @@ import { GameServerMessage, GameSnapshot, RatingChange } from '../shared/types/g
  * 설명:
  *   - 주어진 roomId와 토큰으로 게임 WebSocket을 연결하고 상태 스냅샷을 관리한다.
  *   - 입력 방향을 서버에 전송하는 헬퍼를 제공한다.
- * 버전: v0.4.0
+ *   - v0.8.0에서는 관전자 역할 구분과 관전자 수 상태를 반환한다.
+ * 버전: v0.8.0
  * 관련 설계문서:
- *   - design/frontend/v0.4.0-ranking-and-leaderboard-ui.md
- *   - design/realtime/v0.4.0-ranking-aware-events.md
+ *   - design/frontend/v0.8.0-spectator-ui.md
+ *   - design/realtime/v0.8.0-spectator-events.md
  */
-export function useGameSocket(roomId?: string | null, token?: string | null) {
+export function useGameSocket(
+  roomId?: string | null,
+  token?: string | null,
+  audience: 'PLAYER' | 'SPECTATOR' = 'PLAYER',
+) {
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState('')
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null)
   const [matchType, setMatchType] = useState<'NORMAL' | 'RANKED' | null>(null)
   const [ratingChange, setRatingChange] = useState<RatingChange | null>(null)
+  const [audienceRole, setAudienceRole] = useState<'PLAYER' | 'SPECTATOR'>(audience)
+  const [spectatorCount, setSpectatorCount] = useState(0)
   const socketRef = useRef<WebSocket | null>(null)
 
   useEffect(() => {
@@ -26,9 +33,10 @@ export function useGameSocket(roomId?: string | null, token?: string | null) {
     setSnapshot(null)
     setMatchType(null)
     setRatingChange(null)
+    setSpectatorCount(0)
 
     const socket = new WebSocket(
-      `${WS_BASE_URL}/ws/game?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}`,
+      `${WS_BASE_URL}/ws/game?roomId=${encodeURIComponent(roomId)}&token=${encodeURIComponent(token)}&role=${audience}`,
     )
     socketRef.current = socket
 
@@ -45,15 +53,27 @@ export function useGameSocket(roomId?: string | null, token?: string | null) {
       if (data.ratingChange) {
         setRatingChange(data.ratingChange)
       }
+      if (data.audienceRole) {
+        setAudienceRole(data.audienceRole)
+      }
+      if (typeof data.spectatorCount === 'number') {
+        setSpectatorCount(data.spectatorCount)
+      }
     }
 
     return () => {
       socket.close()
     }
-  }, [roomId, token])
+  }, [roomId, token, audience])
 
   const sendInput = (direction: 'UP' | 'DOWN' | 'STAY') => {
-    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN || !roomId) return
+    if (
+      !socketRef.current ||
+      socketRef.current.readyState !== WebSocket.OPEN ||
+      !roomId ||
+      audienceRole === 'SPECTATOR'
+    )
+      return
     const payload = {
       type: 'INPUT',
       roomId,
@@ -62,5 +82,5 @@ export function useGameSocket(roomId?: string | null, token?: string | null) {
     socketRef.current.send(JSON.stringify(payload))
   }
 
-  return { connected, error, snapshot, matchType, ratingChange, sendInput }
+  return { connected, error, snapshot, matchType, ratingChange, audienceRole, spectatorCount, sendInput }
 }

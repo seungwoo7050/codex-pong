@@ -12,12 +12,11 @@ import { GameSnapshot } from '../shared/types/game'
  * 설명:
  *   - WebSocket으로 전달받은 게임 스냅샷을 렌더링하고 간단한 패들 입력 버튼을 제공한다.
  *   - v0.4.0에서는 랭크/일반 구분과 레이팅 변동 메시지를 표시하고, v0.6.0에서는 매치 채팅 패널을 추가한다.
- * 버전: v0.6.0
+ *   - v0.8.0에서는 관전자 수를 표시해 관전 모드와 동일한 스냅샷 포맷을 공유한다.
+ * 버전: v0.8.0
  * 관련 설계문서:
- *   - design/frontend/v0.4.0-ranking-and-leaderboard-ui.md
- *   - design/frontend/v0.6.0-chat-ui.md
- *   - design/realtime/v0.4.0-ranking-aware-events.md
- *   - design/realtime/v0.6.0-chat-events.md
+ *   - design/frontend/v0.8.0-spectator-ui.md
+ *   - design/realtime/v0.8.0-spectator-events.md
  */
 export function GamePage() {
   const { token, user } = useAuth()
@@ -25,7 +24,10 @@ export function GamePage() {
   const navigate = useNavigate()
   const roomId = params.get('roomId')
 
-  const { connected, error, snapshot, sendInput, matchType, ratingChange } = useGameSocket(roomId, token)
+  const { connected, error, snapshot, sendInput, matchType, ratingChange, spectatorCount } = useGameSocket(
+    roomId,
+    token,
+  )
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
   const chatSocket = useChatSocket(token, (msg) => {
@@ -96,7 +98,7 @@ export function GamePage() {
         <h2>실시간 경기</h2>
         <p>
           방 번호: {roomId ?? '없음'} / 연결 상태: {connected ? '연결됨' : '대기 중'} / 타입:{' '}
-          {matchType === 'RANKED' ? '랭크' : '일반'}
+          {matchType === 'RANKED' ? '랭크' : '일반'} / 관전자: {spectatorCount}
         </p>
         {error && <p className="error">{error}</p>}
         {snapshot ? (

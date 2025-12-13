@@ -53,6 +53,9 @@ describe('FriendsPage', () => {
       if (url.endsWith('/api/social/invites/incoming') || url.endsWith('/api/social/invites/outgoing')) {
         return Promise.resolve(new Response(JSON.stringify([]), { status: 200 }))
       }
+      if (url.endsWith('/api/match/ongoing')) {
+        return Promise.resolve(new Response(JSON.stringify([]), { status: 200 }))
+      }
       if (url.includes('/api/chat/dm') || url.includes('/api/chat/lobby')) {
         return Promise.resolve(new Response(JSON.stringify({ messages: [] }), { status: 200 }))
       }

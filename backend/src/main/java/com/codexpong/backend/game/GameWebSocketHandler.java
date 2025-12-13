@@ -4,6 +4,7 @@ import com.codexpong.backend.auth.model.AuthenticatedUser;
 import com.codexpong.backend.game.domain.GameRoom;
 import com.codexpong.backend.game.engine.model.PaddleInput;
 import com.codexpong.backend.game.service.GameRoomService;
+import com.codexpong.backend.game.service.GameRoomService.AudienceRole;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.URI;
@@ -22,9 +23,10 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
  * 설명:
  *   - 빠른 대전으로 생성된 경기 방에 대한 WebSocket 연결을 관리한다.
  *   - 클라이언트 입력을 GameRoomService로 전달하고, 초기 상태를 전송한다.
- * 버전: v0.4.0
+ *   - v0.8.0에서는 관전 모드 진입을 허용하고 입력 차단, 관전자 수 제한을 적용한다.
+ * 버전: v0.8.0
  * 관련 설계문서:
- *   - design/realtime/v0.4.0-ranking-aware-events.md
+ *   - design/realtime/v0.8.0-spectator-events.md
  */
 @Component
 public class GameWebSocketHandler extends TextWebSocketHandler {
@@ -45,25 +47,48 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             return;
         }
         String roomId = extractRoomId(session.getUri());
+        AudienceRole audienceRole = resolveAudienceRole(session.getUri());
         if (roomId == null) {
             session.close(CloseStatus.NOT_ACCEPTABLE.withReason("roomId가 필요합니다."));
             return;
         }
         Optional<GameRoom> roomOpt = gameRoomService.findRoom(roomId);
-        if (roomOpt.isEmpty() || !roomOpt.get().contains(user.id())) {
+        if (roomOpt.isEmpty()) {
             session.close(CloseStatus.NOT_ACCEPTABLE.withReason("참가할 수 없는 방입니다."));
             return;
         }
         GameRoom room = roomOpt.get();
-        gameRoomService.registerSession(room, user.id(), session);
+        if (audienceRole == AudienceRole.PLAYER && !room.contains(user.id())) {
+            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("참가할 수 없는 방입니다."));
+            return;
+        }
+        if (room.isFinished()) {
+            session.close(CloseStatus.NOT_ACCEPTABLE.withReason("종료된 방은 관전할 수 없습니다."));
+            return;
+        }
+
+        if (audienceRole == AudienceRole.SPECTATOR) {
+            if (!gameRoomService.registerSpectatorSession(room, session.getId(), session)) {
+                session.close(CloseStatus.POLICY_VIOLATION.withReason("관전자 수가 가득 찼습니다."));
+                return;
+            }
+        } else {
+            gameRoomService.registerSession(room, user.id(), session);
+        }
+        session.getAttributes().put("audienceRole", audienceRole.name());
         sendServerMessage(session, new GameRoomService.GameServerMessage("READY", room.currentSnapshot(),
-                room.getMatchType().name(), null));
+                room.getMatchType().name(), null, audienceRole.name(), gameRoomService.spectatorCount(roomId)));
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         AuthenticatedUser user = session.getPrincipal() instanceof AuthenticatedUser principal ? principal : null;
         if (user == null) {
+            return;
+        }
+        AudienceRole role = AudienceRole.valueOf(String.valueOf(session.getAttributes().getOrDefault("audienceRole",
+                AudienceRole.PLAYER.name())));
+        if (role == AudienceRole.SPECTATOR) {
             return;
         }
         ClientMessage clientMessage = objectMapper.readValue(message.getPayload(), ClientMessage.class);
@@ -73,6 +98,14 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 gameRoomService.updateInput(clientMessage.roomId(), user.id(), input);
             }
         }
+    }
+
+    @Override
+    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        String roomId = extractRoomId(session.getUri());
+        AuthenticatedUser user = session.getPrincipal() instanceof AuthenticatedUser principal ? principal : null;
+        gameRoomService.unregisterSession(roomId, user != null ? user.id() : null, session.getId());
+        super.afterConnectionClosed(session, status);
     }
 
     private PaddleInput parseInput(String raw) {
@@ -99,6 +132,18 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
         Map<String, String> params = QueryStringUtils.parse(uri.getQuery());
         return params.get("roomId");
+    }
+
+    private AudienceRole resolveAudienceRole(URI uri) {
+        if (uri == null || uri.getQuery() == null) {
+            return AudienceRole.PLAYER;
+        }
+        Map<String, String> params = QueryStringUtils.parse(uri.getQuery());
+        String role = params.get("role");
+        if (role != null && role.equalsIgnoreCase("spectator")) {
+            return AudienceRole.SPECTATOR;
+        }
+        return AudienceRole.PLAYER;
     }
 
     public record ClientMessage(String type, String roomId, String direction) {

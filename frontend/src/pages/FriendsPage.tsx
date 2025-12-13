@@ -19,6 +19,7 @@ import {
   unblockUser,
 } from '../features/social/api'
 import { useChatSocket } from '../hooks/useChatSocket'
+import { useLiveMatches } from '../hooks/useLiveMatches'
 import { ChatMessage } from '../shared/types/chat'
 import { FriendRequestItem, FriendSummary, GameInvite } from '../shared/types/social'
 
@@ -28,11 +29,11 @@ import { FriendRequestItem, FriendSummary, GameInvite } from '../shared/types/so
  *   - 친구 목록, 친구 요청, 차단, 초대 흐름을 한 화면에서 관리한다.
  *   - v0.5.0 소셜 기능을 UI로 연결하고 초대 수락 시 게임 화면으로 이동한다.
  *   - v0.6.0에서 친구 목록과 연계된 DM 채팅 패널을 제공한다.
- * 버전: v0.6.0
+ *   - v0.8.0에서는 친구가 진행 중인 방으로 바로 관전 진입할 수 있는 버튼을 추가한다.
+ * 버전: v0.8.0
  * 관련 설계문서:
- *   - design/frontend/v0.5.0-friends-and-invites-ui.md
- *   - design/frontend/v0.6.0-chat-ui.md
- *   - design/realtime/v0.6.0-chat-events.md
+ *   - design/frontend/v0.8.0-spectator-ui.md
+ *   - design/realtime/v0.8.0-spectator-events.md
  */
 export function FriendsPage() {
   const { token, user } = useAuth()
@@ -51,6 +52,10 @@ export function FriendsPage() {
       setDmMessages((prev) => [...prev, msg])
     }
   })
+  const { liveMatches } = useLiveMatches(token)
+
+  const liveMatchFor = (userId: number) =>
+    liveMatches.find((match) => match.leftPlayerId === userId || match.rightPlayerId === userId)
 
   const friendsQuery = useQuery({
     queryKey: ['friends'],
@@ -198,6 +203,21 @@ export function FriendsPage() {
         <button className="button" type="button" onClick={() => inviteMutation.mutate(friend.userId)}>
           게임 초대
         </button>
+        {liveMatchFor(friend.userId) && (
+          <button
+            className="secondary"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              const match = liveMatchFor(friend.userId)
+              if (match) {
+                navigate(`/spectate?roomId=${match.roomId}`)
+              }
+            }}
+          >
+            관전
+          </button>
+        )}
       </div>
     </li>
   )
