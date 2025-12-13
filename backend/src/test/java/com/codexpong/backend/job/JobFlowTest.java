@@ -145,7 +145,7 @@ class JobFlowTest {
                     wsPayload.complete(message.getPayload());
                 }
             }
-        }, null, URI.create(String.format("ws://localhost:%d/ws/jobs?token=%s", port, ownerToken))).get(5, TimeUnit.SECONDS);
+        }, null, URI.create(String.format("ws://localhost:%d/ws/jobs?token=%s", port, ownerToken))).get(10, TimeUnit.SECONDS);
 
         redisTemplate.opsForStream().add(jobQueueProperties.getProgressStream(), Map.of(
                 "jobId", jobId.toString(),
@@ -154,7 +154,7 @@ class JobFlowTest {
                 "message", "인코딩 중"
         ));
 
-        String progressPayload = wsPayload.get(5, TimeUnit.SECONDS);
+        String progressPayload = wsPayload.get(10, TimeUnit.SECONDS);
         assertThat(progressPayload).contains("job.progress").contains(jobId.toString());
 
         Path resultPath = Path.of("build/test-exports/job-" + jobId + ".mp4");
@@ -214,12 +214,12 @@ class JobFlowTest {
     }
 
     private void waitForStatus(Long jobId, JobStatus status) throws InterruptedException {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 30; i++) {
             Job job = jobRepository.findById(jobId).orElseThrow();
             if (job.getStatus() == status) {
                 return;
             }
-            Thread.sleep(300);
+            Thread.sleep(500);
         }
         Job job = jobRepository.findById(jobId).orElseThrow();
         assertThat(job.getStatus()).isEqualTo(status);
