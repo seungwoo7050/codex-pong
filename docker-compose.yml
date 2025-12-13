@@ -33,12 +33,16 @@ services:
       - DB_USER=codexpong
       - DB_PASSWORD=codexpong
       - AUTH_JWT_SECRET=change-me-in-prod-secret-please-keep-long
+      - REPLAY_STORAGE_PATH=/data/replays
+      - REPLAY_RETENTION_MAX_PER_USER=20
       - TZ=Asia/Seoul
     ports:
       - "8080:8080"
     depends_on:
       - db
     restart: unless-stopped
+    volumes:
+      - replay_data:/data/replays
 
   frontend:
     build: ./frontend
@@ -96,3 +100,4 @@ services:
 
 volumes:
   db_data:
+  replay_data:

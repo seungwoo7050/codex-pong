@@ -10,6 +10,8 @@ import { FriendsPage } from './pages/FriendsPage'
 import { TournamentPage } from './pages/TournamentPage'
 import { SpectatorPage } from './pages/SpectatorPage'
 import { AdminPage } from './pages/AdminPage'
+import { MyReplaysPage } from './pages/MyReplaysPage'
+import { ReplayViewerPage } from './pages/ReplayViewerPage'
 import { useAuth } from './features/auth/AuthProvider'
 import { ProtectedRoute } from './features/auth/ProtectedRoute'
 
@@ -18,9 +20,11 @@ import { ProtectedRoute } from './features/auth/ProtectedRoute'
  * 설명:
  *   - 기본 네비게이션과 페이지 라우팅을 설정한다.
  *   - v0.8.0에서는 관전 전용 경로를 추가해 실시간 관전 목록으로 이동한다.
- * 버전: v0.8.0
+ *   - v0.11.0에서는 리플레이 목록/뷰어 경로를 추가한다.
+ * 버전: v0.11.0
  * 관련 설계문서:
  *   - design/frontend/v0.8.0-spectator-ui.md
+ *   - design/frontend/v0.11.0-replay-browser-and-viewer.md
  * 변경 이력:
  *   - v0.1.0: React Router 기반 기본 라우팅 추가
  *   - v0.2.0: 인증 라우팅 및 네비게이션 확장
@@ -28,6 +32,7 @@ import { ProtectedRoute } from './features/auth/ProtectedRoute'
  *   - v0.4.0: 리더보드 라우트와 랭크 네비게이션 추가
  *   - v0.5.0: 친구 관리 라우트와 네비게이션 추가
  *   - v0.8.0: 관전 경로와 네비게이션 추가
+ *   - v0.11.0: 리플레이 경로 추가
  */
 function App() {
   const { user, status, logout } = useAuth()
@@ -44,6 +49,7 @@ function App() {
           <Link to="/leaderboard">리더보드</Link>
           <Link to="/tournaments">토너먼트</Link>
           <Link to="/spectate">관전</Link>
+          {status === 'authenticated' && <Link to="/replays">리플레이</Link>}
           {status === 'authenticated' ? (
             <>
               <Link to="/admin">운영</Link>
@@ -119,6 +125,22 @@ function App() {
           element={(
             <ProtectedRoute>
               <SpectatorPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/replays"
+          element={(
+            <ProtectedRoute>
+              <MyReplaysPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/replays/:replayId"
+          element={(
+            <ProtectedRoute>
+              <ReplayViewerPage />
             </ProtectedRoute>
           )}
         />

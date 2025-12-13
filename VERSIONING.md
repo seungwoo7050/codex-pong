@@ -505,7 +505,7 @@ Align UX, auth, and infra more closely with Korean usage patterns.
 
 ## 13. v0.11.0 – Match replay recording & replay browser (MVP)
 
-**Status**: planned
+**Status**: completed
 
 **Goal**
 
