@@ -168,12 +168,20 @@ class JobFlowTest {
         ));
 
         waitForStatus(jobId, JobStatus.SUCCEEDED);
-        ResponseEntity<String> jobResponse = restTemplate.getForEntity("http://localhost:" + port + "/api/jobs/" + jobId,
+        HttpHeaders authHeaders = new HttpHeaders();
+        authHeaders.setBearerAuth(ownerToken);
+        ResponseEntity<String> jobResponse = restTemplate.exchange(
+                "http://localhost:" + port + "/api/jobs/" + jobId,
+                org.springframework.http.HttpMethod.GET,
+                new org.springframework.http.HttpEntity<Void>(authHeaders),
                 String.class);
         assertThat(jobResponse.getBody()).contains("SUCCEEDED");
 
-        ResponseEntity<byte[]> downloadResponse = restTemplate.getForEntity(
-                "http://localhost:" + port + "/api/jobs/" + jobId + "/result", byte[].class);
+        ResponseEntity<byte[]> downloadResponse = restTemplate.exchange(
+                "http://localhost:" + port + "/api/jobs/" + jobId + "/result",
+                org.springframework.http.HttpMethod.GET,
+                new org.springframework.http.HttpEntity<Void>(authHeaders),
+                byte[].class);
         assertThat(downloadResponse.getStatusCode().is2xxSuccessful()).isTrue();
 
         session.close();
