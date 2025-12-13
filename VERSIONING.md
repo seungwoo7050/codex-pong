@@ -393,6 +393,8 @@ Support basic tournament play.
 
 ## 10. v0.8.0 – Spectator mode & live viewing
 
+**Status**: completed (관전 전용 WebSocket 역할 분리, 관전자 목록/지연 브로드캐스트, 관전 UI/진입점 제공)
+
 **Goal**
 
 Allow users to watch ongoing matches.
