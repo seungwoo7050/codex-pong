@@ -25,6 +25,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * 변경 이력:
  *   - v0.2.0: JWT 필터와 세션 정책 설정 추가
  *   - v0.6.0: 로비/매치 채팅 히스토리 GET 엔드포인트를 비인증 허용으로 확장
+ *   - v0.10.0: Swagger 문서 경로를 공개로 허용
  */
 @Configuration
 @EnableWebSecurity
@@ -44,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/oauth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/chat/lobby", "/api/chat/match/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

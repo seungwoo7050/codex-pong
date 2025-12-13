@@ -500,6 +500,7 @@ Align UX, auth, and infra more closely with Korean usage patterns.
   - `design/backend/v0.10.0-kor-auth-and-locale.md`
   - `design/frontend/v0.10.0-kor-ux.md`
   - `design/infra/v0.10.0-kst-and-utf8mb4.md`
+- 유지 메모: 백엔드/프런트엔드 버전 문자열을 `v0.10.0`으로 통일하고 Swagger UI(`/v3/api-docs`, `/swagger-ui`)를 항상 노출한다.
 
 ---
 
