@@ -564,7 +564,7 @@ Users can revisit finished matches via a **replay** page:
 
 ## 14. v0.12.0 – Replay export pipeline via IPC worker (jobs + progress)
 
-**Status**: planned
+**Status**: completed
 
 **Goal**
 
@@ -639,6 +639,11 @@ Export a replay into downloadable artifacts without blocking the backend:
     - queue depth
     - job duration
     - worker restarts
+
+**Completion notes (v0.12.0)**
+- Redis Streams 기반 잡 큐 + `replay-worker`가 FFmpeg CLI로 MP4/썸네일을 생성하며, 진행률/결과를 WebSocket으로 푸시한다.
+- REST API(`/api/replays/{id}/exports/*`, `/api/jobs*`)와 잡 상태 머신이 DB에 기록된다.
+- 프런트엔드에 작업 버튼/드로어/목록 페이지가 추가되었고, `CLONE_GUIDE.md`·`design/backend|frontend|realtime|infra` 문서가 업데이트되었다.
 
 **Completion criteria**
 

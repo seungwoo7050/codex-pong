@@ -35,6 +35,12 @@ services:
       - AUTH_JWT_SECRET=change-me-in-prod-secret-please-keep-long
       - REPLAY_STORAGE_PATH=/data/replays
       - REPLAY_RETENTION_MAX_PER_USER=20
+      - REDIS_HOST=redis
+      - JOB_QUEUE_ENABLED=true
+      - JOB_QUEUE_REQUEST_STREAM=job.requests
+      - JOB_QUEUE_PROGRESS_STREAM=job.progress
+      - JOB_QUEUE_RESULT_STREAM=job.results
+      - JOB_QUEUE_CONSUMER_GROUP=replay-jobs
       - TZ=Asia/Seoul
     ports:
       - "8080:8080"
@@ -53,6 +59,23 @@ services:
       - TZ=Asia/Seoul
     ports:
       - "5173:5173"
+    restart: unless-stopped
+
+  replay-worker:
+    build: ./worker
+    container_name: codexpong-replay-worker
+    environment:
+      - REDIS_HOST=redis
+      - JOB_QUEUE_REQUEST_STREAM=job.requests
+      - JOB_QUEUE_PROGRESS_STREAM=job.progress
+      - JOB_QUEUE_RESULT_STREAM=job.results
+      - JOB_QUEUE_CONSUMER_GROUP=replay-jobs
+      - WORKER_ID=replay-worker-1
+      - TZ=Asia/Seoul
+    depends_on:
+      - redis
+    volumes:
+      - replay_data:/data/replays
     restart: unless-stopped
 
   prometheus:

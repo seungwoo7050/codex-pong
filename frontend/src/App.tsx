@@ -12,6 +12,7 @@ import { SpectatorPage } from './pages/SpectatorPage'
 import { AdminPage } from './pages/AdminPage'
 import { MyReplaysPage } from './pages/MyReplaysPage'
 import { ReplayViewerPage } from './pages/ReplayViewerPage'
+import { JobsPage } from './pages/JobsPage'
 import { useAuth } from './features/auth/AuthProvider'
 import { ProtectedRoute } from './features/auth/ProtectedRoute'
 
@@ -21,10 +22,12 @@ import { ProtectedRoute } from './features/auth/ProtectedRoute'
  *   - 기본 네비게이션과 페이지 라우팅을 설정한다.
  *   - v0.8.0에서는 관전 전용 경로를 추가해 실시간 관전 목록으로 이동한다.
  *   - v0.11.0에서는 리플레이 목록/뷰어 경로를 추가한다.
- * 버전: v0.11.0
+ *   - v0.12.0에서는 리플레이 내보내기 잡 대시보드를 위한 경로를 추가한다.
+ * 버전: v0.12.0
  * 관련 설계문서:
  *   - design/frontend/v0.8.0-spectator-ui.md
  *   - design/frontend/v0.11.0-replay-browser-and-viewer.md
+ *   - design/frontend/v0.12.0-replay-export-and-jobs-ui.md
  * 변경 이력:
  *   - v0.1.0: React Router 기반 기본 라우팅 추가
  *   - v0.2.0: 인증 라우팅 및 네비게이션 확장
@@ -49,7 +52,12 @@ function App() {
           <Link to="/leaderboard">리더보드</Link>
           <Link to="/tournaments">토너먼트</Link>
           <Link to="/spectate">관전</Link>
-          {status === 'authenticated' && <Link to="/replays">리플레이</Link>}
+          {status === 'authenticated' && (
+            <>
+              <Link to="/replays">리플레이</Link>
+              <Link to="/jobs">작업</Link>
+            </>
+          )}
           {status === 'authenticated' ? (
             <>
               <Link to="/admin">운영</Link>
@@ -141,6 +149,14 @@ function App() {
           element={(
             <ProtectedRoute>
               <ReplayViewerPage />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/jobs"
+          element={(
+            <ProtectedRoute>
+              <JobsPage />
             </ProtectedRoute>
           )}
         />

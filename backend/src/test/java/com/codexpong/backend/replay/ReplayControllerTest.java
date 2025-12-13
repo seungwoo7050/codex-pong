@@ -10,6 +10,9 @@ import com.codexpong.backend.game.GameResultRepository;
 import com.codexpong.backend.game.domain.GameRoom;
 import com.codexpong.backend.game.domain.MatchType;
 import com.codexpong.backend.game.engine.model.GameSnapshot;
+import com.codexpong.backend.chat.repository.ChatMessageRepository;
+import com.codexpong.backend.chat.repository.ChatMuteRepository;
+import com.codexpong.backend.job.JobRepository;
 import com.codexpong.backend.user.domain.User;
 import com.codexpong.backend.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,19 +60,36 @@ class ReplayControllerTest {
     @Autowired
     private GameResultRepository gameResultRepository;
 
+    @Autowired
+    private ChatMessageRepository chatMessageRepository;
+
+    @Autowired
+    private ChatMuteRepository chatMuteRepository;
+
+    @Autowired
+    private JobRepository jobRepository;
+
     @BeforeEach
     void cleanUp() {
+        jobRepository.deleteAll();
         replayRepository.deleteAll();
         gameResultRepository.deleteAll();
+        chatMessageRepository.deleteAll();
+        chatMuteRepository.deleteAll();
+        userRepository.deleteAll();
     }
 
     @Test
     @DisplayName("소유자는 리플레이 메타데이터와 이벤트 파일을 조회할 수 있다")
     void ownerCanBrowseReplay() throws Exception {
-        String ownerToken = obtainToken("replay-owner");
-        obtainToken("replay-opponent");
-        User owner = userRepository.findByUsername("replay-owner").orElseThrow();
-        User opponent = userRepository.findByUsername("replay-opponent").orElseThrow();
+        String uniqueSuffix = String.valueOf(System.nanoTime());
+        String ownerUsername = "replay-owner-" + uniqueSuffix;
+        String opponentUsername = "replay-opponent-" + uniqueSuffix;
+
+        String ownerToken = obtainToken(ownerUsername);
+        obtainToken(opponentUsername);
+        User owner = userRepository.findByUsername(ownerUsername).orElseThrow();
+        User opponent = userRepository.findByUsername(opponentUsername).orElseThrow();
 
         GameRoom room = new GameRoom(owner, opponent, MatchType.NORMAL);
         replayService.startRecording(room);
