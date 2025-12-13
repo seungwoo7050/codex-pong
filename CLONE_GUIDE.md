@@ -33,7 +33,7 @@ cd codex-pong
   - `AUTH_JWT_EXPIRATION_SECONDS` (선택, 기본 3600)
   - `AUTH_KAKAO_PROFILE_URI` (선택, 기본 `https://kapi.kakao.com/v2/user/me`, 테스트용 모킹 시 오버라이드)
   - `AUTH_NAVER_PROFILE_URI` (선택, 기본 `https://openapi.naver.com/v1/nid/me`)
-  - `REPLAY_STORAGE_PATH` (기본 `/data/replays`, backend 컨테이너에 마운트된 리플레이 볼륨 경로)
+- `REPLAY_STORAGE_PATH` (기본 `${user.dir}/build/replays`, Docker Compose 시 `/data/replays`로 오버라이드되어 named volume 사용)
   - `REPLAY_RETENTION_MAX_PER_USER` (기본 20, 사용자당 최신 리플레이 보존 개수)
   - 모든 컨테이너 기본 `TZ=Asia/Seoul`, DB 콜레이션 `utf8mb4_unicode_ci`를 사용한다.
 - 프런트엔드
@@ -105,7 +105,7 @@ npm run build
 
 ## 8. 버전별 메모 (v0.11.0)
 - 주요 기능: 일반/랭크 대전, 랭크 레이팅, 리더보드 + 친구 목록/요청/차단/초대, 친구 초대 후 게임 방 진입, DM/로비/매치 채팅, 단일 제거 토너먼트, **관전 모드**, **관리자 API/콘솔 + 모니터링**, **카카오/네이버 OAuth 로그인**, **KST/utf8mb4 환경 정비**, **경기 종료 시 리플레이 녹화 및 리스트/뷰어 제공**.
-- 리플레이 절차: 매치 종료 → backend가 `/data/replays` 볼륨에 JSONL 이벤트 파일 기록 → `/api/replays`에서 내 소유 리플레이 조회 → `/replays/{id}` 화면에서 재생/시크/배속 제어.
+- 리플레이 절차: 매치 종료 → backend가 `${user.dir}/build/replays`(로컬/CI) 또는 `/data/replays`(Docker) 경로에 JSONL 이벤트 파일 기록 → `/api/replays`에서 내 소유 리플레이 조회 → `/replays/{id}` 화면에서 재생/시크/배속 제어.
 - 매칭 절차: 로비에서 원하는 큐 선택 → 일반전 `/api/match/quick`, 랭크전 `/api/match/ranked` 티켓 발급 → roomId로 `/ws/game` 연결.
 - 관전 절차: `/api/match/ongoing`으로 진행 중인 roomId 조회 → `/spectate?roomId=<id>` 이동 → WebSocket `role=spectator`로 연결해 입력 없이 상태 수신.
 - 토너먼트 절차:

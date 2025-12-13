@@ -52,7 +52,7 @@ public class ReplayService {
 
     public ReplayService(ReplayRepository replayRepository,
             UserRepository userRepository, ObjectMapper objectMapper,
-            @Value("${replay.storage.path:/data/replays}") String storagePath,
+            @Value("${replay.storage.path}") String storagePath,
             @Value("${replay.retention.max-per-user:20}") int retentionLimit) {
         this.replayRepository = replayRepository;
         this.userRepository = userRepository;
