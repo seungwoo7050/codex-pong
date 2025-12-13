@@ -500,7 +500,6 @@ Align UX, auth, and infra more closely with Korean usage patterns.
   - `design/backend/v0.10.0-kor-auth-and-locale.md`
   - `design/frontend/v0.10.0-kor-ux.md`
   - `design/infra/v0.10.0-kst-and-utf8mb4.md`
-- 유지 메모: 백엔드/프런트엔드 버전 문자열을 `v0.10.0`으로 통일하고 Swagger UI(`/v3/api-docs`, `/swagger-ui`)를 항상 노출한다.
 
 ---
 
@@ -769,7 +768,7 @@ Provide a **stable, well-documented** release suitable for portfolio use and tec
 
 ---
 
-## 14. Notes for agents
+## 18. Notes for agents
 
 - For any coding task:
   - Pick **one** version above and follow `AGENTS.md` workflow.
@@ -778,3 +777,34 @@ Provide a **stable, well-documented** release suitable for portfolio use and tec
   - `PRODUCT_SPEC.md` defines the intended product behavior.
   - `STACK_DESIGN.md` defines the allowed stack.
   - This `VERSIONING.md` defines **when** each part is implemented.
+
+---
+
+## 19. Portfolio submission milestones (recommended)
+
+These milestones are recommended “submission points” depending on seniority.
+(Actual expectations vary by company, but these cuts minimize overwork while maximizing interview value.)
+
+- Entry-level (new grad)
+  - Minimum: v0.3.0
+    - Rationale: real-time 1v1 + simple matchmaking is already a complete vertical slice.
+  - Recommended: v0.4.0
+    - Rationale: ranked queue + rating + leaderboard adds persistence + algorithmic business logic.
+
+- Junior transfer
+  - Minimum: v0.6.0
+    - Rationale: chat introduces higher concurrency pressure + moderation hooks + WS protocol stability.
+  - Recommended: v0.7.0 (or v0.8.0 if you want to emphasize realtime fan-out)
+    - Rationale: tournament/spectator adds multi-entity state + realtime event consistency.
+
+- Mid transfer
+  - Minimum: v0.9.0
+    - Rationale: ops/admin + monitoring is where mid-level evaluation usually focuses.
+  - Recommended: v1.0.0
+    - Rationale: stabilization + hardening + documentation/test coherence matters more than adding features.
+
+Submission package expectations (recommended for all levels):
+- CLONE_GUIDE.md is accurate (clone → run → test)
+- At least one end-to-end flow is reproducible via automated tests
+- API/WS external contracts are documented and consistent with tests
+- Known limitations are explicitly listed (no vague TODOs)
