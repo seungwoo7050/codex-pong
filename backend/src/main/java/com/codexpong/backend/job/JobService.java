@@ -115,11 +115,11 @@ public class JobService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "완료된 잡만 다운로드할 수 있습니다.");
         }
         Path path = Paths.get(job.getResultUri()).toAbsolutePath().normalize();
-        if (!Files.exists(path)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "결과 파일을 찾을 수 없습니다.");
-        }
         if (!isWithinExportRoot(path)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용된 경로 밖의 파일은 제공하지 않습니다.");
+        }
+        if (!Files.exists(path)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "결과 파일을 찾을 수 없습니다.");
         }
         return path;
     }
@@ -200,9 +200,16 @@ public class JobService {
 
     private boolean isWithinExportRoot(Path path) {
         try {
+            Path normalized = path.toAbsolutePath().normalize();
+            if (!normalized.startsWith(exportBasePath)) {
+                return false;
+            }
             Path realBase = exportBaseRealPath != null ? exportBaseRealPath : exportBasePath.toRealPath();
-            Path realTarget = path.toRealPath();
-            return realTarget.startsWith(realBase);
+            if (Files.exists(normalized)) {
+                Path realTarget = normalized.toRealPath();
+                return realTarget.startsWith(realBase);
+            }
+            return normalized.startsWith(realBase);
         } catch (Exception ignored) {
             return false;
         }
