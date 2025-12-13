@@ -1,6 +1,7 @@
 package com.codexpong.backend.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -9,20 +10,25 @@ import com.codexpong.backend.game.GameResultRepository;
 import com.codexpong.backend.game.domain.GameRoom;
 import com.codexpong.backend.game.domain.MatchType;
 import com.codexpong.backend.game.engine.model.GameSnapshot;
+import com.codexpong.backend.job.Job;
+import com.codexpong.backend.job.JobType;
 import com.codexpong.backend.replay.Replay;
 import com.codexpong.backend.replay.ReplayRepository;
 import com.codexpong.backend.replay.ReplayService;
 import com.codexpong.backend.user.domain.User;
 import com.codexpong.backend.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +43,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.util.FileSystemUtils;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
@@ -64,6 +71,8 @@ class JobFlowTest {
     @Container
     static GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine").withExposedPorts(6379);
 
+    private static final Path TEST_EXPORT_ROOT = Paths.get("build/test-exports").toAbsolutePath();
+
     @DynamicPropertySource
     static void redisProps(DynamicPropertyRegistry registry) {
         try {
@@ -76,6 +85,7 @@ class JobFlowTest {
         registry.add("spring.data.redis.host", redis::getHost);
         registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
         registry.add("jobs.queue.enabled", () -> true);
+        registry.add("jobs.export.path", () -> TEST_EXPORT_ROOT.toString());
     }
 
     @Autowired
@@ -111,6 +121,13 @@ class JobFlowTest {
     @LocalServerPort
     private int port;
 
+    @AfterEach
+    void cleanupFiles() throws IOException {
+        if (Files.exists(TEST_EXPORT_ROOT)) {
+            FileSystemUtils.deleteRecursively(TEST_EXPORT_ROOT);
+        }
+    }
+
     @BeforeEach
     void clean() {
         jobRepository.deleteAll();
@@ -136,13 +153,17 @@ class JobFlowTest {
         Map<String, Object> body = objectMapper.readValue(createResponse.getResponse().getContentAsString(), Map.class);
         Long jobId = Long.valueOf(body.get("jobId").toString());
 
-        CompletableFuture<String> wsPayload = new CompletableFuture<>();
+        CompletableFuture<String> wsProgressPayload = new CompletableFuture<>();
+        CompletableFuture<String> wsCompletedPayload = new CompletableFuture<>();
         StandardWebSocketClient client = new StandardWebSocketClient();
         WebSocketSession session = client.doHandshake(new TextWebSocketHandler() {
             @Override
             public void handleTextMessage(WebSocketSession session, TextMessage message) {
                 if (message.getPayload().contains("job.progress")) {
-                    wsPayload.complete(message.getPayload());
+                    wsProgressPayload.complete(message.getPayload());
+                }
+                if (message.getPayload().contains("job.completed")) {
+                    wsCompletedPayload.complete(message.getPayload());
                 }
             }
         }, null, URI.create(String.format("ws://localhost:%d/ws/jobs?token=%s", port, ownerToken))).get(10, TimeUnit.SECONDS);
@@ -154,10 +175,10 @@ class JobFlowTest {
                 "message", "인코딩 중"
         ));
 
-        String progressPayload = wsPayload.get(10, TimeUnit.SECONDS);
+        String progressPayload = wsProgressPayload.get(10, TimeUnit.SECONDS);
         assertThat(progressPayload).contains("job.progress").contains(jobId.toString());
 
-        Path resultPath = Path.of("build/test-exports/job-" + jobId + ".mp4");
+        Path resultPath = TEST_EXPORT_ROOT.resolve("job-" + jobId + ".mp4");
         Files.createDirectories(resultPath.getParent());
         Files.writeString(resultPath, "dummy");
         redisTemplate.opsForStream().add(jobQueueProperties.getResultStream(), Map.of(
@@ -168,6 +189,10 @@ class JobFlowTest {
         ));
 
         waitForStatus(jobId, JobStatus.SUCCEEDED);
+        String completedPayload = wsCompletedPayload.get(10, TimeUnit.SECONDS);
+        assertThat(completedPayload).contains("job.completed")
+                .contains("/api/jobs/" + jobId + "/result")
+                .doesNotContain(resultPath.toString());
         HttpHeaders authHeaders = new HttpHeaders();
         authHeaders.setBearerAuth(ownerToken);
         ResponseEntity<String> jobResponse = restTemplate.exchange(
@@ -185,6 +210,23 @@ class JobFlowTest {
         assertThat(downloadResponse.getStatusCode().is2xxSuccessful()).isTrue();
 
         session.close();
+    }
+
+    @Test
+    void 출력_루트밖_경로는_다운로드할_수_없다() throws Exception {
+        String ownerToken = obtainToken("path-owner");
+        obtainToken("path-opponent");
+        User owner = userRepository.findByUsername("path-owner").orElseThrow();
+        User opponent = userRepository.findByUsername("path-opponent").orElseThrow();
+
+        Replay replay = createReplay(owner, opponent);
+        Job job = new Job(JobType.REPLAY_EXPORT_MP4, owner, replay);
+        job.succeed(Paths.get("/tmp/forbidden/video.mp4").toString(), "abc");
+        jobRepository.save(job);
+
+        mockMvc.perform(get("/api/jobs/" + job.getId() + "/result")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ownerToken))
+                .andExpect(status().isBadRequest());
     }
 
     private String obtainToken(String username) throws Exception {

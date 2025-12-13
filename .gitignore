@@ -40,6 +40,11 @@
 **/coverage/
 **/test-results/
 **/test-output/
+/build/replays/
+/build/test-exports/
+**/build/replays/exports/
+/worker/.pytest_cache/
+/worker/__pycache__/
 
 # 기타
 !.gitignore
