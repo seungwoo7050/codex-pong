@@ -158,7 +158,7 @@ You do **not** write the detailed design doc yet; that is done **after** code an
   - WebSocket endpoint paths and authentication handshakes
   - Realtime event names, payload schemas, and message flows
   - Infra-visible ports / env vars / reverse-proxy routes
-- Keep this “contract doc” minimal (interfaces + rules only). Detailed internal design is still written/updated in Step 7 after tests pass.
+- Keep this "contract doc" minimal (interfaces + rules only). Detailed internal design is still written/updated in Step 7 after tests pass.
 
 ### Step 4. Implement code (with Korean comments)
 
@@ -199,7 +199,7 @@ If gradle-wrapper.jar was temporarily added for build or test, you MUST delete g
    - Fix code, tests, or configuration as needed.
    - Repeat implementation + test steps until all tests pass.
 
-You MUST NOT disable, comment out, or delete failing tests just to make the test run “green”.
+You MUST NOT disable, comment out, or delete failing tests just to make the test run "green".
 
 ### Step 7. Update documentation (after tests pass)
 
@@ -224,7 +224,7 @@ Once all tests pass for the target version:
      - Document new environment variables, ports, or dependencies.
      - Write everything in Korean.
 3. **VERSIONING.md**:
-   - Mark the target version as “implemented” or “completed” if all criteria are satisfied.
+   - Mark the target version as "implemented" or "completed" if all criteria are satisfied.
    - Note any known limitations or TODOs that remain.
 
 ### Step 8. Version completion criteria
@@ -236,7 +236,7 @@ A version (e.g. `v0.1.0`) is considered **complete** only if:
 - At least one design document exists for this version and relevant domain(s).
 - `CLONE_GUIDE.md` is up-to-date for any changes to cloning/building/running/testing.
 - `VERSIONING.md` reflects:
-  - The version status (e.g. “completed”).
+  - The version status (e.g. "completed").
   - Any known limitations or follow-up work.
 
 If any of these conditions are not met, you MUST treat the version as **incomplete** and continue working.

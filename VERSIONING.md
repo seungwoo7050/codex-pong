@@ -111,7 +111,7 @@ Establish the full-stack skeleton (backend + frontend + infra) and deliver a **m
 - All services build and start via Docker Compose.
 - A user can:
   - Open the frontend.
-  - Navigate to a test “game” or demo screen.
+  - Navigate to a test "game" or demo screen.
   - See a minimal interaction flow (even with mocked or simple logic).
 - Design docs (Korean):
   - `design/backend/v0.1.0-core-skeleton-and-health.md`
@@ -129,7 +129,7 @@ Establish the full-stack skeleton (backend + frontend + infra) and deliver a **m
 
 **Goal**
 
-Introduce real user accounts and basic profiles, moving away from “temporary nickname only”.
+Introduce real user accounts and basic profiles, moving away from "temporary nickname only".
 
 **Scope**
 
@@ -146,7 +146,7 @@ Introduce real user accounts and basic profiles, moving away from “temporary n
 - Frontend:
   - Screens:
     - Register / login forms.
-    - “My profile” page.
+    - "My profile" page.
   - Auth state management:
     - Persisted login state (e.g. localStorage + React Query).
     - Guarded routes for authenticated features.
@@ -163,7 +163,7 @@ Introduce real user accounts and basic profiles, moving away from “temporary n
 - A user can:
   - Register, log in, log out.
   - View/edit a basic profile.
-- Auth is enforced for any “user-owned” game actions.
+- Auth is enforced for any "user-owned" game actions.
 - Design docs (Korean):
   - `design/backend/v0.2.0-auth-and-profile.md`
   - `design/frontend/v0.2.0-auth-and-profile-ui.md`
@@ -189,13 +189,13 @@ Deliver an actual playable **real-time 1v1 Pong-like game** with simple matchmak
   - Game engine:
     - Authoritative game loop (ball/paddle physics, scoring).
   - Simple matchmaking:
-    - “Quick play” queue that pairs two players.
+    - "Quick play" queue that pairs two players.
   - Game result persistence:
     - Store match results linked to users.
 
 - Frontend:
   - Lobby:
-    - “Quick play” button.
+    - "Quick play" button.
     - Simple indication of matchmaking in progress.
   - Game UI:
     - Render paddles/ball using data from backend.
@@ -410,7 +410,7 @@ Allow users to watch ongoing matches.
   - Spectator view:
     - Watch games without controlling paddles.
   - Entry points:
-    - From friend list, leaderboard, or dedicated “ongoing matches” list.
+    - From friend list, leaderboard, or dedicated "ongoing matches" list.
 
 - Realtime:
   - Different event channels or roles for spectators vs players.
@@ -535,7 +535,7 @@ Users can revisit finished matches via a **replay** page:
     - `GET /api/replays/{replayId}` (replay metadata + signed URL or streaming endpoint for event file)
 
 - Frontend:
-  - “My Replays” screen:
+  - "My Replays" screen:
     - list with paging (match date, opponent, result, duration)
     - search by opponent nickname
   - Replay viewer:
@@ -552,7 +552,7 @@ Users can revisit finished matches via a **replay** page:
 **Completion criteria**
 
 - A user can:
-  - Finish a match and see it appear in “My Replays”.
+  - Finish a match and see it appear in "My Replays".
   - Open a replay and watch it from start to end.
   - Seek and change playback speed.
 - Design docs (Korean):
@@ -600,6 +600,19 @@ Export a replay into downloadable artifacts without blocking the backend:
 - Worker (new service):
   - Runs as a separate container `replay-worker`.
   - Consumes queue messages, executes export, uploads artifact, publishes progress/result.
+  - Export implementation (explicit requirement):
+    - The worker MUST invoke **FFmpeg CLI** to generate artifacts.
+      - MP4 export: encode to `.mp4`
+      - Thumbnail: extract a representative frame to `.png` (or `.jpg`)
+    - Wrapper libraries are allowed only for **command construction**, not as a replacement for FFmpeg.
+  - Progress:
+    - Prefer parsing `ffmpeg -progress pipe:1` output and mapping `out_time_ms` (or equivalent) to `0..100`.
+    - If exact mapping is not feasible, use phase-based progress steps and document the steps.
+  - Optional C++ evidence (only if you choose "C++ 다형성" as an implemented interview item):
+    - Add a small C++ native helper under `worker/native/`:
+      - `IJob` (virtual interface) + `ExportMp4Job` / `ThumbnailJob` implementations
+    - When `NATIVE_HELPER_ENABLED=true`, the worker MUST delegate job command execution/dispatch to this helper
+      (invoked as a subprocess, similar to how `ffmpeg` is invoked).
 
 - IPC (explicit):
   - Queue mechanism: Redis Streams (or equivalent, but must be one explicit mechanism).
@@ -615,9 +628,9 @@ Export a replay into downloadable artifacts without blocking the backend:
 
 - Frontend:
   - Replay viewer adds:
-    - “Export MP4” button -> creates job -> opens job drawer
+    - "Export MP4" button -> creates job -> opens job drawer
     - Job drawer shows progress bar + log lines + download link
-  - “Jobs” list page:
+  - "Jobs" list page:
     - filter by status/type, retry (if allowed), cancel (if allowed)
 
 - Infra:
@@ -630,10 +643,13 @@ Export a replay into downloadable artifacts without blocking the backend:
 **Completion criteria**
 
 - A user can:
-  - Click “Export MP4” and see a progress bar live via WebSocket.
+  - Click "Export MP4" and see a progress bar live via WebSocket.
   - Download the exported file when completed.
   - See a clear error reason if failed.
 - Worker crash does not crash backend; job ends in a consistent state (retry or fail with reason).
+- Export implementation is based on **FFmpeg CLI** (not an in-process encoder), and progress is derived from FFmpeg execution output.
+- (Optional) If `NATIVE_HELPER_ENABLED=true`, the C++ native helper is built and used, and its job dispatch is implemented
+  with polymorphism (`IJob` + derived jobs).
 - Design docs (Korean):
   - `design/backend/v0.12.0-jobs-api-and-state-machine.md`
   - `design/realtime/v0.12.0-job-progress-events.md`
@@ -663,6 +679,7 @@ Add hardware acceleration paths with strict CPU fallback:
 - Worker:
   - Export MP4:
     - add config flag `EXPORT_HW_ACCEL=true/false`
+    - Implementation note: HW acceleration path MUST be realized via **FFmpeg CLI** encoder selection / hwaccel flags, with strict software fallback.
     - detect supported hw encoder/decoder on startup and log capability
     - if unsupported, automatically fall back to software encode
   - Output determinism:
@@ -782,7 +799,7 @@ Provide a **stable, well-documented** release suitable for portfolio use and tec
 
 ## 19. Portfolio submission milestones (recommended)
 
-These milestones are recommended “submission points” depending on seniority.
+These milestones are recommended "submission points" depending on seniority.
 (Actual expectations vary by company, but these cuts minimize overwork while maximizing interview value.)
 
 - Entry-level (new grad)

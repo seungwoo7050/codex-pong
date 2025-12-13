@@ -2,7 +2,7 @@
 
 ## 목적
 - `VERSIONING.md`에 정의된 v0.1.0~v0.7.0 범위의 구현을 **소스 코드 기준**으로 재확인한다.
-- 기존 “전부 미구현” 결론이 잘못되었음을 바로잡고, 실제로 존재하는 코드와 기능 범위를 설명한다.
+- 기존 "전부 미구현" 결론이 잘못되었음을 바로잡고, 실제로 존재하는 코드와 기능 범위를 설명한다.
 
 ## 주요 소스 코드 현황 요약
 - **백엔드 전체 스택 존재**: Spring Boot 애플리케이션 엔트리포인트와 헬스 체크, 인증, 사용자 프로필, 게임/랭킹, 소셜, 채팅, 토너먼트 도메인까지 컨트롤러·서비스·엔티티·리포지토리가 구현돼 있다. 예) 헬스 체크 `HealthController`, 게임 결과 `GameResultController`, 인증 `AuthController` 등.【F:backend/src/main/java/com/codexpong/backend/health/HealthController.java†L1-L39】【F:backend/src/main/java/com/codexpong/backend/game/GameResultController.java†L1-L35】【F:backend/src/main/java/com/codexpong/backend/auth/controller/AuthController.java†L1-L56】
@@ -47,4 +47,4 @@
 - 백엔드에 다수의 테스트가 존재하지만, 로컬 실행 시 `gradle-wrapper.jar` 부재로 `./gradlew test`를 실행하지 못했다. 추가 실행 전 wrapper 다운로드가 필요하다.【68d8c2†L1-L3】
 
 ## 종합 결론
-- 기존 “백엔드/실시간/테스트 코드 부재” 결론은 사실이 아니다. v0.1.0~v0.7.0 각 버전에 해당하는 기능(헬스 체크, 인증/프로필, 실시간 게임 및 매칭, 랭크, 친구/초대, 채팅, 토너먼트)이 모두 소스 코드와 테스트로 구현되어 있다. 현재 레포의 소스코드는 요구 버전 기능을 포괄하는 완성된 애플리케이션 코드이며, 추가 검증을 위해서는 gradle wrapper를 준비한 뒤 테스트 실행이 필요하다.
+- 기존 "백엔드/실시간/테스트 코드 부재" 결론은 사실이 아니다. v0.1.0~v0.7.0 각 버전에 해당하는 기능(헬스 체크, 인증/프로필, 실시간 게임 및 매칭, 랭크, 친구/초대, 채팅, 토너먼트)이 모두 소스 코드와 테스트로 구현되어 있다. 현재 레포의 소스코드는 요구 버전 기능을 포괄하는 완성된 애플리케이션 코드이며, 추가 검증을 위해서는 gradle wrapper를 준비한 뒤 테스트 실행이 필요하다.

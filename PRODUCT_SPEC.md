@@ -8,7 +8,7 @@ This document defines **what this service does**: features, user flows, and requ
 This project is a **real-time competitive Pong-like game service** for the Korean web market.  
 It is inspired by the idea behind ft_transcendence, but it is **not** a reimplementation of the original subject.
 
-We target a **high-end, feature-rich implementation** (roughly “150-point” level):  
+We target a **high-end, feature-rich implementation** (roughly "150-point" level):  
 - Core game + ranking
 - Rich social features
 - Tournaments
@@ -188,7 +188,7 @@ Exact mode availability per version is defined in `VERSIONING.md`.
   - Store large replay payloads either in DB as compressed blobs or in external/object storage (later).
 - Frontend:
   - Replay viewer page with play/pause/seek/speed control.
-  - (If added) basic “share link” UX.
+  - (If added) basic "share link" UX.
 
 ### 6.5 Replay export (optional, later versions)
 
@@ -247,7 +247,7 @@ Exact mode availability per version is defined in `VERSIONING.md`.
 ### 8.2 Invitations
 
 - Game invite:
-  - Send direct “play with me” invitations to online friends.
+  - Send direct "play with me" invitations to online friends.
 - Party (optional, later):
   - Small group of users (2–4) that can queue together.
 
@@ -286,7 +286,7 @@ Exact mode availability per version is defined in `VERSIONING.md`.
 - Features:
   - Create/join tournament.
   - Auto-advance winners to next round.
-  - Schedule or “start when full” modes.
+  - Schedule or "start when full" modes.
 
 ### 10.2 Seasonal events
 
@@ -308,7 +308,7 @@ Exact details and priority will be defined in `VERSIONING.md` and `design/` docs
 
 ### 11.2 Observability for players
 
-- Simple “who is playing now” list (optional).
+- Simple "who is playing now" list (optional).
 - Watching friends’ matches directly from friend list.
 
 Spectator features may appear in later versions; the basic requirement is that the architecture allows it.

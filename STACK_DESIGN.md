@@ -193,7 +193,7 @@ We design a **monolithic-but-modular** backend with a separate SPA frontend and 
   - Run CPU/GPU heavy or long-running tasks (e.g. replay export) outside request/WS threads.
 - Process boundary:
   - Introduce a **separate worker process** (still within the approved stack unless a human changes it).
-  - This is “IPC” in practice: backend ↔ worker communicate through shared infrastructure, not in-process calls.
+  - This is "IPC" in practice: backend ↔ worker communicate through shared infrastructure, not in-process calls.
 - Communication:
   - Backend enqueues jobs into Redis (preferred: Redis Streams; acceptable: lists) with a stable schema.
   - Worker consumes jobs, performs the task, and updates status/result location in MariaDB (and/or Redis).

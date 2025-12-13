@@ -385,10 +385,10 @@ AGENTS.md 개발 루프를 따라 다음을 구현해라:
     - owner만 조회 가능(관리자 예외 정책이 있으면 문서에 명시)
 
 - 프론트엔드:
-  - “내 리플레이” 화면:
+  - "내 리플레이" 화면:
     - 목록(매치 날짜/상대/결과/길이)
     - 상대 닉네임 검색
-  - “리플레이 뷰어” 화면:
+  - "리플레이 뷰어" 화면:
     - 재생/일시정지
     - 시크(seek)
     - 배속(0.5x/1x/2x)
@@ -443,7 +443,7 @@ AGENTS.md 개발 루프를 따라 다음을 구현해라:
   - Dispatcher:
     - 잡 생성 시 큐로 job 메시지를 발행한다(상관관계 id는 jobId).
     - idempotency 규칙을 문서로 고정해라(같은 jobId는 결과가 중복 생성되면 안 됨).
-    - retry/dead-letter 정책을 최소 단위로라도 “명시”해라.
+    - retry/dead-letter 정책을 최소 단위로라도 "명시"해라.
 
 - IPC / Queue(명시적으로 하나 선택해 고정):
   - Redis Streams(권장) 또는 프로젝트에 이미 채택된 큐 1개만 사용.
@@ -456,6 +456,16 @@ AGENTS.md 개발 루프를 따라 다음을 구현해라:
   - Docker Compose에 replay-worker 서비스를 추가한다(백엔드와 별도 프로세스).
   - 큐 메시지를 소비해 실제 export 작업을 수행하고 progress/result를 발행한다.
   - 워커 장애가 백엔드를 죽이지 않아야 한다(격리 + 재시도/실패 처리 일관성).
+  - export 구현은 **FFmpeg CLI**를 사용해라(필수):
+    - MP4: ffmpeg로 인코딩하여 `.mp4` 생성
+    - 썸네일: ffmpeg로 대표 프레임을 `.png`(또는 `.jpg`)로 추출
+    - (주의) "ffmpeg 라이브러리로 대체"하지 마라. CLI 실행이 기준이다.
+  - 진행률은 가능하면 `ffmpeg -progress pipe:1` 출력(예: out_time_ms)을 파싱해서 0..100으로 매핑해라.
+    - 정확 매핑이 어렵다면 phase 기반(step) progress라도 반드시 고정해라(문서에 단계 정의).
+  - (선택) "C++ 다형성"을 구현 증거로 남기고 싶다면(v0.12 범위 안에서만):
+    - `worker/native/`에 C++ helper를 추가해라.
+    - `IJob`(virtual) + `ExportMp4Job`/`ThumbnailJob` 구조로 job dispatch를 구성해라.
+    - `NATIVE_HELPER_ENABLED=true`일 때 워커가 이 helper를 subprocess로 호출하도록 연결해라.
 
 - 실시간:
   - WebSocket 이벤트를 명시적으로 정의/구현:
@@ -465,7 +475,7 @@ AGENTS.md 개발 루프를 따라 다음을 구현해라:
   - 백엔드가 워커 progress를 받아 유저에게 push 하도록 구현한다.
 
 - 프론트엔드:
-  - 리플레이 뷰어에 “MP4 내보내기”, “썸네일 생성” 버튼 추가
+  - 리플레이 뷰어에 "MP4 내보내기", "썸네일 생성" 버튼 추가
   - job drawer(또는 모달):
     - 진행률 바, 로그, 완료 시 다운로드 링크
   - jobs 목록 화면:
@@ -500,19 +510,21 @@ AGENTS.md 개발 루프를 따라 다음을 구현해라:
   - 리플레이 뷰어 렌더러를 2중 경로로 만든다:
     - WebGL 경로(가능하면 기본)
     - Canvas2D fallback(WebGL 미지원/실패 시)
-  - 런타임에서 WebGL 가능 여부를 감지하고 fallback이 “자동”이어야 한다.
+  - 런타임에서 WebGL 가능 여부를 감지하고 fallback이 "자동"이어야 한다.
   - 개발 모드에서 최소 성능 계측을 남긴다:
     - 1x/2x 재생 시 평균 FPS(로그 또는 dev UI)
 
 - 워커(서버 HW encode):
   - export MP4에 대해 옵션 플래그를 추가한다:
     - EXPORT_HW_ACCEL=true/false (환경변수 또는 설정)
+  - HW encode 구현은 **FFmpeg CLI 옵션/인코더 선택**으로 해결해라.
+    - 미지원이면 자동으로 소프트웨어 경로로 fallback
   - 워커 시작 시 하드웨어 인코더/디코더 지원 여부를 감지하고 로그로 남긴다.
   - 미지원이면 자동으로 소프트웨어 경로로 fallback 한다.
-  - 결과물은 “재생 가능”해야 하고 실패 시 error_code/error_message가 명확해야 한다.
+  - 결과물은 "재생 가능"해야 하고 실패 시 error_code/error_message가 명확해야 한다.
 
 - 인프라:
-  - GPU는 “선택”이다:
+  - GPU는 "선택"이다:
     - CI는 CPU-only 유지
     - 로컬/특정 환경에서만 GPU 경로를 검증할 수 있도록 문서에 체크리스트를 만든다.
 
@@ -538,12 +550,12 @@ AGENTS.md, STACK_DESIGN.md, PRODUCT_SPEC.md, CODING_GUIDE.md,
 DOC_TEMPLATES.md, VERSIONING.md를 읽어라.
 
 이번 작업의 대상은 VERSIONING.md에 정의될 v0.14.0 (리플로우 통제 + 비동기 패턴 정리 + UTF-8 회귀)만이다.
-새 기능을 늘리지 말고, “증명 가능한 품질”을 만든다.
+새 기능을 늘리지 말고, "증명 가능한 품질"을 만든다.
 
 AGENTS.md 개발 루프를 따라 다음을 수행해라:
 
 - 프론트엔드(리플로우/성능):
-  - 리플로우 감사(audit) 대상 화면을 최소 2개 “명시적으로 선택”하고 문서에 박아라:
+  - 리플로우 감사(audit) 대상 화면을 최소 2개 "명시적으로 선택"하고 문서에 박아라:
     - 예: leaderboard / chat / replays list / jobs list 중 2개 이상
   - 각 화면에 대해:
     - 긴 리스트는 virtualization 또는 paging을 적용한다.
@@ -553,7 +565,7 @@ AGENTS.md 개발 루프를 따라 다음을 수행해라:
 - 프론트엔드(비동기 패턴):
   - export/job 진행률 수신 플로우에서 중첩 콜백이 남아있으면 제거하고,
     async/await 또는 Promise 기반으로 공통 래퍼를 만든다.
-  - WebSocket 재연결/에러 처리 정책을 “코드 + 문서”로 고정한다.
+  - WebSocket 재연결/에러 처리 정책을 "코드 + 문서"로 고정한다.
 
 - 백엔드(UTF-8 회귀):
   - v0.10.0에서 요구한 `utf8mb4 end-to-end`를 테스트로 고정한다.
