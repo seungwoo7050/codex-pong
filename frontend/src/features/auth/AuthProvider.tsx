@@ -1,6 +1,6 @@
 import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
-import { fetchProfile, login as loginApi, logout as logoutApi, register as registerApi } from './api'
+import { OAuthProvider, fetchProfile, login as loginApi, loginWithProvider, logout as logoutApi, register as registerApi } from './api'
 import { UserProfile } from '../../shared/types/user'
 
 /**
@@ -17,6 +17,7 @@ interface AuthContextValue {
   token: string | null
   user: UserProfile | null
   login: (username: string, password: string) => Promise<void>
+  loginWithOAuth: (provider: OAuthProvider, accessToken: string) => Promise<void>
   register: (params: { username: string; password: string; nickname: string; avatarUrl?: string }) => Promise<void>
   logout: () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -77,6 +78,11 @@ function AuthProviderInternal({ children }: PropsWithChildren) {
     handleAuthSuccess(response.token, response.user)
   }, [handleAuthSuccess])
 
+  const loginWithOAuth = useCallback(async (provider: OAuthProvider, accessToken: string) => {
+    const response = await loginWithProvider(provider, accessToken)
+    handleAuthSuccess(response.token, response.user)
+  }, [handleAuthSuccess])
+
   const register = useCallback(
     async ({ username, password, nickname, avatarUrl }: { username: string; password: string; nickname: string; avatarUrl?: string }) => {
       const response = await registerApi({ username, password, nickname, avatarUrl })
@@ -105,9 +111,10 @@ function AuthProviderInternal({ children }: PropsWithChildren) {
     user,
     login,
     register,
+    loginWithOAuth,
     logout,
     refreshProfile,
-  }), [login, logout, register, refreshProfile, status, token, user])
+  }), [login, loginWithOAuth, logout, register, refreshProfile, status, token, user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

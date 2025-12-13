@@ -54,7 +54,7 @@ export function AdminPage() {
     }
   }
 
-  const formatDate = (value?: string | null) => (value ? new Date(value).toLocaleString('ko-KR') : '-')
+  const formatDate = (value?: string | null) => (value ? new Date(value).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '-')
 
   return (
     <main className="page">
@@ -117,6 +117,9 @@ export function AdminPage() {
                     {user.banned ? '밴' : '정상'}
                     {user.suspendedUntil && !user.banned && ` · 정지 ${formatDate(user.suspendedUntil)}`}
                     {user.mutedUntil && ` · 뮤트 ${formatDate(user.mutedUntil)}`}
+                    <div className="badge" style={{ marginTop: '4px' }}>
+                      로그인: {user.authProvider ? user.authProvider : '로컬'} / 로케일 {user.locale ?? '미지정'}
+                    </div>
                   </td>
                   <td>
                     <button className="button" type="button" onClick={() => handleModeration(user.id)}>

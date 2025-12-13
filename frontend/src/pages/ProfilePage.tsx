@@ -20,8 +20,14 @@ export function ProfilePage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const createdAt = useMemo(() => (user ? new Date(user.createdAt).toLocaleString('ko-KR') : ''), [user])
-  const updatedAt = useMemo(() => (user ? new Date(user.updatedAt).toLocaleString('ko-KR') : ''), [user])
+  const createdAt = useMemo(
+    () => (user ? new Date(user.createdAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : ''),
+    [user],
+  )
+  const updatedAt = useMemo(
+    () => (user ? new Date(user.updatedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : ''),
+    [user],
+  )
 
   if (!user || !token) {
     return <main className="page">프로필을 불러오는 중 문제가 발생했습니다.</main>

@@ -2,6 +2,8 @@
   font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
   color: #e6e8ec;
   background-color: #0d1117;
+  line-height: 1.6;
+  word-break: keep-all;
 }
 
 body {

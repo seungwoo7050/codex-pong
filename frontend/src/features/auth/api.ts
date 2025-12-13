@@ -26,6 +26,8 @@ export interface RegisterPayload extends LoginPayload {
   avatarUrl?: string
 }
 
+export type OAuthProvider = 'kakao' | 'naver'
+
 export function register(payload: RegisterPayload) {
   return apiFetch<AuthResponse>('/api/auth/register', {
     method: 'POST',
@@ -37,6 +39,13 @@ export function login(payload: LoginPayload) {
   return apiFetch<AuthResponse>('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+}
+
+export function loginWithProvider(provider: OAuthProvider, accessToken: string) {
+  return apiFetch<AuthResponse>(`/api/auth/oauth/${provider}`, {
+    method: 'POST',
+    body: JSON.stringify({ accessToken }),
   })
 }
 
