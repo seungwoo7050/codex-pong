@@ -8,6 +8,10 @@ group = 'com.codexpong'
 version = '0.10.0'
 description = 'Codex Pong Backend'
 
+springBoot {
+    buildInfo()
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
