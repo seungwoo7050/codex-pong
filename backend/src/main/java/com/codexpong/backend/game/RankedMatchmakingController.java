@@ -21,9 +21,11 @@ import org.springframework.web.server.ResponseStatusException;
  * 설명:
  *   - v0.4.0 랭크 큐 전용 엔드포인트를 제공해 일반전과 큐를 분리한다.
  *   - 동일한 응답 포맷으로 roomId와 매치 타입을 반환한다.
- * 버전: v0.4.0
+ * 버전: v0.9.0
  * 관련 설계문서:
  *   - design/backend/v0.4.0-ranking-system.md
+ * 변경 이력:
+ *   - v0.9.0: 랭크 큐에서도 밴/정지 사용자를 차단하도록 개선
  */
 @RestController
 @RequestMapping("/api/match/ranked")
@@ -40,7 +42,7 @@ public class RankedMatchmakingController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public MatchmakingResponse enqueue(@AuthenticationPrincipal AuthenticatedUser user) {
-        MatchTicket ticket = matchmakingService.enqueue(userService.getUserEntity(user.id()), MatchType.RANKED);
+        MatchTicket ticket = matchmakingService.enqueue(userService.getActiveUserEntity(user.id()), MatchType.RANKED);
         return MatchmakingResponse.from(ticket);
     }
 

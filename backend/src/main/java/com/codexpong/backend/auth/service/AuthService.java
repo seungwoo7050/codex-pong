@@ -18,12 +18,13 @@ import org.springframework.web.server.ResponseStatusException;
  * 설명:
  *   - 회원가입, 로그인, 토큰 생성 흐름을 담당한다.
  *   - 비밀번호 검증 및 사용자 중복 체크를 수행한 뒤 토큰과 사용자 정보를 반환한다.
- * 버전: v0.4.0
+ * 버전: v0.9.0
  * 관련 설계문서:
  *   - design/backend/v0.4.0-ranking-system.md
  * 변경 이력:
  *   - v0.2.0: JWT 발급 기반 인증 서비스 구현
  *   - v0.4.0: 레이팅 필드 포함 사용자 응답 유지
+ *   - v0.9.0: 밴/정지 계정 로그인 차단 추가
  */
 @Service
 public class AuthService {
@@ -59,6 +60,7 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호가 올바르지 않습니다.");
         }
+        ensureActive(user);
         return toAuthResponse(user);
     }
 
@@ -68,6 +70,15 @@ public class AuthService {
 
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);
+    }
+
+    private void ensureActive(User user) {
+        if (user.isBanned()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "밴된 계정입니다. 관리자에게 문의하세요.");
+        }
+        if (user.isSuspended()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "정지 기간이 끝날 때까지 로그인할 수 없습니다.");
+        }
     }
 
     private AuthResponse toAuthResponse(User user) {

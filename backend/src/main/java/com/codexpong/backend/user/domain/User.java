@@ -9,18 +9,20 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 /**
  * [엔티티] backend/src/main/java/com/codexpong/backend/user/domain/User.java
  * 설명:
  *   - 계정 및 기본 프로필 정보를 보관하는 사용자 엔티티다.
  *   - v0.4.0에서 랭크 시스템 적용을 위해 레이팅 필드를 추가하고 기본값을 관리한다.
- * 버전: v0.4.0
+ * 버전: v0.9.0
  * 관련 설계문서:
  *   - design/backend/v0.4.0-ranking-system.md
  * 변경 이력:
  *   - v0.2.0: 사용자 엔티티 및 타임스탬프 관리 추가
  *   - v0.4.0: 레이팅 필드와 접근자 추가
+ *   - v0.9.0: 밴/정지 상태 필드와 헬퍼 메서드 추가
  */
 @Entity
 @Table(name = "users")
@@ -44,6 +46,18 @@ public class User {
 
     @Column(nullable = false, columnDefinition = "int default 1200")
     private Integer rating;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean banned;
+
+    @Column(length = 255)
+    private String banReason;
+
+    @Column
+    private LocalDateTime bannedAt;
+
+    @Column
+    private LocalDateTime suspendedUntil;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -73,11 +87,14 @@ public class User {
 
     @PrePersist
     void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
         this.createdAt = now;
         this.updatedAt = now;
         if (this.rating == null) {
             this.rating = 1200;
+        }
+        if (this.suspendedUntil == null) {
+            this.suspendedUntil = null;
         }
     }
 
@@ -110,11 +127,47 @@ public class User {
         return rating;
     }
 
+    public boolean isBanned() {
+        return banned;
+    }
+
+    public LocalDateTime getSuspendedUntil() {
+        return suspendedUntil;
+    }
+
+    public LocalDateTime getBannedAt() {
+        return bannedAt;
+    }
+
+    public String getBanReason() {
+        return banReason;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public boolean isSuspended() {
+        return suspendedUntil != null && suspendedUntil.isAfter(LocalDateTime.now(ZoneId.of("Asia/Seoul")));
+    }
+
+    public void ban(String reason) {
+        this.banned = true;
+        this.banReason = reason;
+        this.bannedAt = LocalDateTime.now();
+    }
+
+    public void clearBan() {
+        this.banned = false;
+        this.banReason = null;
+        this.bannedAt = null;
+    }
+
+    public void suspendUntil(LocalDateTime until) {
+        this.suspendedUntil = until;
     }
 }

@@ -21,9 +21,11 @@ import org.springframework.web.server.ResponseStatusException;
  * 설명:
  *   - 빠른 대전 큐에 사용자를 등록하고 매칭 상태를 조회하는 엔드포인트를 제공한다.
  *   - WebSocket 연결 전에 roomId를 전달받기 위한 티켓 형태로 응답한다.
- * 버전: v0.4.0
+ * 버전: v0.9.0
  * 관련 설계문서:
  *   - design/backend/v0.4.0-ranking-system.md
+ * 변경 이력:
+ *   - v0.9.0: 밴/정지 사용자 차단을 위해 활성 사용자 조회 헬퍼 사용
  */
 @RestController
 @RequestMapping("/api/match/quick")
@@ -44,7 +46,7 @@ public class MatchmakingController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public MatchmakingResponse enqueue(@AuthenticationPrincipal AuthenticatedUser user) {
-        MatchTicket ticket = matchmakingService.enqueue(userService.getUserEntity(user.id()), MatchType.NORMAL);
+        MatchTicket ticket = matchmakingService.enqueue(userService.getActiveUserEntity(user.id()), MatchType.NORMAL);
         return MatchmakingResponse.from(ticket);
     }
 
