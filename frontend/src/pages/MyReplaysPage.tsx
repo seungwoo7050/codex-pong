@@ -7,11 +7,12 @@ import { ReplaySummary } from '../shared/types/replay'
 /**
  * [페이지] frontend/src/pages/MyReplaysPage.tsx
  * 설명:
- *   - v0.11.0 리플레이 녹화 기능을 기반으로 내 리플레이 목록을 검색/정렬 없이 단순 페이징으로 보여준다.
+ *   - v0.12.0에서는 내보내기 잡 페이지로 빠르게 이동할 수 있는 링크를 추가했다.
  *   - 상대 닉네임으로 필터링하고 결과/길이/생성 시간을 확인한 뒤 뷰어로 이동할 수 있다.
- * 버전: v0.11.0
+ * 버전: v0.12.0
  * 관련 설계문서:
  *   - design/frontend/v0.11.0-replay-browser-and-viewer.md
+ *   - design/frontend/v0.12.0-replay-export-and-jobs-ui.md
  */
 export function MyReplaysPage() {
   const { token } = useAuth()
@@ -60,6 +61,9 @@ export function MyReplaysPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          <Link className="secondary" to="/jobs">
+            내 내보내기 잡 보기
+          </Link>
         </div>
         {loading && <p>불러오는 중...</p>}
         {error && <p className="error">{error}</p>}
