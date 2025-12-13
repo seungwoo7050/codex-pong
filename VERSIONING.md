@@ -497,7 +497,240 @@ Align UX, auth, and infra more closely with Korean usage patterns.
 
 ---
 
-## 13. v1.0.0 – Portfolio-ready release
+## 13. v0.11.0 – Match replay recording & replay browser (MVP)
+
+**Status**: planned
+
+**Goal**
+
+Users can revisit finished matches via a **replay** page:
+- Record match events deterministically (ball/paddle states or input stream).
+- Store and browse replays per user.
+
+**Scope**
+
+- Backend:
+  - DB schema:
+    - `replay` table:
+      - `replay_id` (PK)
+      - `match_id` (FK)
+      - `owner_user_id` (FK)
+      - `created_at`
+      - `duration_ms`
+      - `event_format` (e.g., `JSONL_V1`)
+      - `storage_uri` (where replay event file is stored)
+      - `checksum` (integrity)
+  - Recording:
+    - On match end, write replay event stream to storage (initially local volume; object storage can be introduced later).
+    - Ensure replay data is not affected by locale/encoding (Korean nicknames included in metadata only).
+  - APIs:
+    - `GET /api/matches/{matchId}/replay` (returns replay metadata + access permission)
+    - `GET /api/replays` (list my replays; paging/sorting)
+    - `GET /api/replays/{replayId}` (replay metadata + signed URL or streaming endpoint for event file)
+
+- Frontend:
+  - “My Replays” screen:
+    - list with paging (match date, opponent, result, duration)
+    - search by opponent nickname
+  - Replay viewer:
+    - renders replay using the same game canvas component (read-only mode)
+    - basic controls: play/pause, seek, speed (0.5x/1x/2x)
+
+- Realtime:
+  - No new realtime requirement (replay is post-match), but reuse existing WebSocket stack without breaking it.
+
+- Infra:
+  - Add a persistent storage path for replay event files in Docker Compose (named volume).
+  - Add retention rule (e.g., keep last N replays per user; document policy).
+
+**Completion criteria**
+
+- A user can:
+  - Finish a match and see it appear in “My Replays”.
+  - Open a replay and watch it from start to end.
+  - Seek and change playback speed.
+- Design docs (Korean):
+  - `design/backend/v0.11.0-replay-recording-and-storage.md`
+  - `design/frontend/v0.11.0-replay-browser-and-viewer.md`
+  - `design/infra/v0.11.0-replay-storage-and-retention.md`
+
+---
+
+## 14. v0.12.0 – Replay export pipeline via IPC worker (jobs + progress)
+
+**Status**: planned
+
+**Goal**
+
+Export a replay into downloadable artifacts without blocking the backend:
+- Export MP4 (or GIF) and a thumbnail.
+- Show progress to the user in real time.
+- Execute heavy work in an isolated worker via **IPC**.
+
+**Scope**
+
+- Backend:
+  - DB schema:
+    - `job` table:
+      - `job_id` (PK)
+      - `job_type` (e.g., `REPLAY_EXPORT_MP4`, `REPLAY_THUMBNAIL`)
+      - `owner_user_id`
+      - `target_replay_id`
+      - `status` (`QUEUED/RUNNING/SUCCEEDED/FAILED/CANCELLED`)
+      - `progress` (0..100)
+      - `created_at/started_at/ended_at`
+      - `error_code/error_message`
+      - `result_uri` (download location)
+  - APIs:
+    - `POST /api/replays/{replayId}/exports/mp4` -> returns `jobId`
+    - `POST /api/replays/{replayId}/exports/thumbnail` -> returns `jobId`
+    - `GET /api/jobs/{jobId}` -> status/progress
+    - `GET /api/jobs` -> list my jobs (paging)
+    - `GET /api/jobs/{jobId}/result` -> download when ready
+  - Dispatcher:
+    - Publish job messages to queue with `jobId` as correlation id.
+    - Handle retries and idempotency (same `jobId` must not create duplicated artifacts).
+
+- Worker (new service):
+  - Runs as a separate container `replay-worker`.
+  - Consumes queue messages, executes export, uploads artifact, publishes progress/result.
+
+- IPC (explicit):
+  - Queue mechanism: Redis Streams (or equivalent, but must be one explicit mechanism).
+  - Message schema:
+    - request: `{ jobId, jobType, replayId, options }`
+    - progress: `{ jobId, progress, phase, message }`
+    - result: `{ jobId, status, resultUri, checksum, errorCode, errorMessage }`
+
+- Realtime:
+  - WebSocket progress:
+    - backend pushes `job.progress`, `job.completed`, `job.failed` to the user.
+  - Client subscribes by `jobId`.
+
+- Frontend:
+  - Replay viewer adds:
+    - “Export MP4” button -> creates job -> opens job drawer
+    - Job drawer shows progress bar + log lines + download link
+  - “Jobs” list page:
+    - filter by status/type, retry (if allowed), cancel (if allowed)
+
+- Infra:
+  - Docker Compose adds `replay-worker` service.
+  - Basic monitoring of:
+    - queue depth
+    - job duration
+    - worker restarts
+
+**Completion criteria**
+
+- A user can:
+  - Click “Export MP4” and see a progress bar live via WebSocket.
+  - Download the exported file when completed.
+  - See a clear error reason if failed.
+- Worker crash does not crash backend; job ends in a consistent state (retry or fail with reason).
+- Design docs (Korean):
+  - `design/backend/v0.12.0-jobs-api-and-state-machine.md`
+  - `design/realtime/v0.12.0-job-progress-events.md`
+  - `design/infra/v0.12.0-worker-and-queue-topology.md`
+
+---
+
+## 15. v0.13.0 – GPU-accelerated replay rendering + optional HW-encode export
+
+**Status**: planned
+
+**Goal**
+
+Add hardware acceleration paths with strict CPU fallback:
+- Client replay rendering uses GPU when available.
+- Export pipeline optionally uses hardware encode when host supports it.
+
+**Scope**
+
+- Frontend:
+  - Replay renderer:
+    - Implement WebGL rendering path (GPU) for replay visualization.
+    - Provide fallback to Canvas2D when WebGL is unavailable.
+  - Performance instrumentation:
+    - record average FPS during replay playback (1x, 2x) in dev mode.
+
+- Worker:
+  - Export MP4:
+    - add config flag `EXPORT_HW_ACCEL=true/false`
+    - detect supported hw encoder/decoder on startup and log capability
+    - if unsupported, automatically fall back to software encode
+  - Output determinism:
+    - exported file must be playable and consistent across hw/software (within acceptable encoding variance)
+
+- Infra:
+  - Document local optional GPU setup (manual checklist, not required for CI).
+  - Keep CI pipeline CPU-only.
+
+**Completion criteria**
+
+- Replay playback uses WebGL path by default when available, and fallback works.
+- In a GPU-capable environment, export uses HW acceleration and shows measurable speedup vs software (documented).
+- In CPU-only environment, export still completes successfully.
+- Design docs (Korean):
+  - `design/frontend/v0.13.0-webgl-replay-renderer.md`
+  - `design/infra/v0.13.0-optional-gpu-runtime.md`
+  - `design/backend/v0.13.0-export-hw-accel-flags.md`
+
+---
+
+## 16. v0.14.0 – Frontend reflow audit + async patterns hardening (portfolio-grade)
+
+**Status**: planned
+
+**Goal**
+
+Make performance and async code quality explicitly demonstrable:
+- Control reflow/layout thrashing on heavy screens.
+- Remove callback-style async nesting in core flows.
+- Add UTF-8 regression coverage (Korean/emoji) for replay/jobs metadata.
+
+**Scope**
+
+- Frontend:
+  - Reflow audit targets (must pick at least 2):
+    - leaderboard screen
+    - chat screen
+    - replay list screen
+    - jobs list screen
+  - Apply fixes:
+    - virtualization or paging for long lists
+    - prevent layout thrashing (no interleaved DOM read/write in loops)
+    - memoization for stable renders (React)
+  - Provide a short perf report in docs with before/after screenshots.
+
+- Backend:
+  - UTF-8 regression tests:
+    - Korean + emoji nicknames in replay/job metadata
+    - REST + WebSocket payload encoding round-trip
+    - DB round-trip correctness (building on v0.10.0 utf8mb4 requirement)
+
+- Realtime:
+  - Standardize job progress client handling:
+    - Promise/async wrappers
+    - unified error handling
+    - reconnection policy documented
+
+**Completion criteria**
+
+- Perf report exists with:
+  - identified reflow sources
+  - before/after evidence (DevTools captures)
+  - concrete mitigations
+- Core async flows contain no deeply nested callbacks (code review rule + refactor).
+- UTF-8 regression tests pass consistently.
+- Design docs (Korean):
+  - `design/frontend/v0.14.0-reflow-audit-and-fixes.md`
+  - `design/realtime/v0.14.0-async-ws-client-patterns.md`
+  - `design/backend/v0.14.0-utf8-regression-suite.md`
+
+---
+
+## 17. v1.0.0 – Portfolio-ready release
 
 **Goal**
 
@@ -505,7 +738,7 @@ Provide a **stable, well-documented** release suitable for portfolio use and tec
 
 **Scope**
 
-- Stabilize and polish features introduced in v0.1.0–v0.10.0.
+- Stabilize and polish features introduced in v0.1.0–v0.14.0.
 - Fix known bugs and performance issues that affect basic usability.
 - Ensure all documentation and demos are coherent.
 

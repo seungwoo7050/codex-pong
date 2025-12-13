@@ -25,7 +25,7 @@ We design a **monolithic-but-modular** backend with a separate SPA frontend and 
   - Modular domain layers (User, Auth, Game, Matchmaking, Ranking, Social, Admin, etc.)
 - **Data stores**
   - MariaDB (primary relational store)
-  - Redis (cache, session, matchmaking/room state)
+  - Redis (cache, session, matchmaking/room state, async job queues for later versions)
 - **Infra**
   - Nginx as reverse proxy (terminates TLS, static assets, routing)
   - Docker + Docker Compose for local/dev orchestration
@@ -187,6 +187,23 @@ We design a **monolithic-but-modular** backend with a separate SPA frontend and 
   - Option to separate real-time gateway / game worker processes.
   - This should be added only if/when `VERSIONING.md` defines a corresponding version.
 
+### 4.4 Asynchronous job processing (replay/media export) (later versions)
+
+- Goal:
+  - Run CPU/GPU heavy or long-running tasks (e.g. replay export) outside request/WS threads.
+- Process boundary:
+  - Introduce a **separate worker process** (still within the approved stack unless a human changes it).
+  - This is “IPC” in practice: backend ↔ worker communicate through shared infrastructure, not in-process calls.
+- Communication:
+  - Backend enqueues jobs into Redis (preferred: Redis Streams; acceptable: lists) with a stable schema.
+  - Worker consumes jobs, performs the task, and updates status/result location in MariaDB (and/or Redis).
+- Execution:
+  - Worker may invoke external tools (e.g. `ffmpeg`) via OS process execution.
+  - Must enforce timeouts, retry policy, and idempotency per job.
+- Hardware acceleration (optional):
+  - If enabled, worker may use ffmpeg hwaccel (e.g. NVENC/QSV/VAAPI) when available.
+  - Must gracefully fall back to software encoding.
+
 ---
 
 ## 5. Data stores
@@ -212,6 +229,7 @@ We design a **monolithic-but-modular** backend with a separate SPA frontend and 
   - Session or token blacklists (depending on auth design)
   - Matchmaking queues
   - Real-time game room metadata (where appropriate)
+  - (Later versions) Async job queues for exports and other long-running tasks
 
 - Basic guidelines:
   - Use clear key prefixes per domain: `user:`, `match:`, `room:`, etc.
@@ -228,6 +246,7 @@ We design a **monolithic-but-modular** backend with a separate SPA frontend and 
   - Services:
     - `frontend`
     - `backend`
+    - (later) `worker` (async jobs: replay/media export, etc.)
     - `db` (MariaDB)
     - `redis`
     - `nginx`

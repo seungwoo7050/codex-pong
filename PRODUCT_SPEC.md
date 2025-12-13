@@ -29,6 +29,7 @@ All versions and implementation priorities are driven by `VERSIONING.md`.
   - Social graph (friends, blocks), invitations, chat
   - Competitive modes (ranked, tournaments)
   - Basic admin and monitoring to inspect and operate the system
+  - (Optional, later versions) Match replay viewing and media export (highlight/clip)
 
 ---
 
@@ -174,6 +175,31 @@ Exact mode availability per version is defined in `VERSIONING.md`.
 - AFK / disconnect handling:
   - If a player disconnects mid-game, game ends with an appropriate result (win/loss/forfeit).
   - Rules to be defined in design docs; must avoid abuse.
+
+### 6.4 Match replay (optional, later versions)
+
+- Purpose:
+  - Provide a way to revisit finished matches for users (learning, bragging, dispute review).
+- Data model direction (choose one per version design doc):
+  - Deterministic **event log** per match (inputs/events) OR
+  - Periodic **state snapshots** (+ delta events).
+- Storage:
+  - Store replay metadata in MariaDB.
+  - Store large replay payloads either in DB as compressed blobs or in external/object storage (later).
+- Frontend:
+  - Replay viewer page with play/pause/seek/speed control.
+  - (If added) basic “share link” UX.
+
+### 6.5 Replay export (optional, later versions)
+
+- Provide a server-side export pipeline to generate:
+  - MP4 clip (primary) and optionally GIF (later).
+- Execution model:
+  - MUST be asynchronous (job-based). Do not block HTTP request threads.
+  - API returns a job id; client polls or receives status via WebSocket/notifications.
+- Implementation note:
+  - Export worker may use `ffmpeg` CLI to render/export.
+  - Hardware acceleration may be used when available (later; must be versioned).
 
 ---
 
@@ -355,6 +381,13 @@ The level of tooling grows with versions; early versions can be minimal.
   - Protection against obvious injection/CSRF/XSS vectors
 - Abuse:
   - Blocking, reporting, banning mechanisms in social/chat.
+
+### 14.4 Frontend rendering performance (later versions)
+
+- The live game view should remain smooth under typical desktop conditions:
+  - Avoid layout thrashing (excessive reflow/repaint) from frequent DOM reads/writes.
+  - Prefer Canvas/WebGL for high-frequency rendering; keep DOM overlays minimal.
+  - Measure and document performance constraints in `design/frontend` for the target version.
 
 ---
 
