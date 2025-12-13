@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 
 import com.codexpong.backend.game.GameResultService;
 import com.codexpong.backend.game.service.MatchmakingService.MatchTicket;
+import com.codexpong.backend.replay.ReplayService;
 import com.codexpong.backend.user.domain.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -22,7 +23,8 @@ class MatchmakingServiceTest {
     @DisplayName("두 사용자가 대기열에 들어오면 즉시 매칭된다")
     void matchTwoPlayers() {
         GameResultService resultService = mock(GameResultService.class);
-        GameRoomService roomService = new GameRoomService(resultService, new ObjectMapper());
+        ReplayService replayService = mock(ReplayService.class);
+        GameRoomService roomService = new GameRoomService(resultService, replayService, new ObjectMapper());
         MatchmakingService matchmakingService = new MatchmakingService(roomService);
 
         User alice = new User("alice", "pass", "앨리스", null);

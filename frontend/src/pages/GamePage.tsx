@@ -5,7 +5,7 @@ import { fetchMatchMessages, sendMatchMessage } from '../features/chat/api'
 import { useChatSocket } from '../hooks/useChatSocket'
 import { useGameSocket } from '../hooks/useGameSocket'
 import { ChatMessage } from '../shared/types/chat'
-import { GameSnapshot } from '../shared/types/game'
+import { GameCanvas } from '../shared/components/GameCanvas'
 
 /**
  * [페이지] frontend/src/pages/GamePage.tsx
@@ -13,10 +13,12 @@ import { GameSnapshot } from '../shared/types/game'
  *   - WebSocket으로 전달받은 게임 스냅샷을 렌더링하고 간단한 패들 입력 버튼을 제공한다.
  *   - v0.4.0에서는 랭크/일반 구분과 레이팅 변동 메시지를 표시하고, v0.6.0에서는 매치 채팅 패널을 추가한다.
  *   - v0.8.0에서는 관전자 수를 표시해 관전 모드와 동일한 스냅샷 포맷을 공유한다.
- * 버전: v0.8.0
+ *   - v0.11.0에서는 리플레이 뷰어와 동일한 GameCanvas를 재사용하도록 구조를 정리한다.
+ * 버전: v0.11.0
  * 관련 설계문서:
  *   - design/frontend/v0.8.0-spectator-ui.md
  *   - design/realtime/v0.8.0-spectator-events.md
+ *   - design/frontend/v0.11.0-replay-browser-and-viewer.md
  */
 export function GamePage() {
   const { token, user } = useAuth()
@@ -61,37 +63,6 @@ export function GamePage() {
     return '랭크전 결과가 반영되었습니다.'
   }, [matchType, ratingChange, user])
 
-  const renderCourt = (state: GameSnapshot) => {
-    const scale = 0.6
-    const courtWidth = 800 * scale
-    const courtHeight = 480 * scale
-    const paddleHeight = 80 * scale
-    const paddleWidth = 12
-    const ballSize = 12
-
-    return (
-      <div className="court" style={{ width: courtWidth, height: courtHeight }}>
-        <div
-          className="paddle left"
-          style={{ height: paddleHeight, width: paddleWidth, top: state.leftPaddleY * scale }}
-        />
-        <div
-          className="paddle right"
-          style={{
-            height: paddleHeight,
-            width: paddleWidth,
-            top: state.rightPaddleY * scale,
-            right: 0,
-          }}
-        />
-        <div
-          className="ball"
-          style={{ width: ballSize, height: ballSize, left: state.ballX * scale, top: state.ballY * scale }}
-        />
-      </div>
-    )
-  }
-
   return (
     <main className="page">
       <section className="panel">
@@ -103,12 +74,7 @@ export function GamePage() {
         {error && <p className="error">{error}</p>}
         {snapshot ? (
           <div className="game-area">
-            {renderCourt(snapshot)}
-            <div className="scoreboard">
-              <div className="score">왼쪽: {snapshot.leftScore}</div>
-              <div className="score">오른쪽: {snapshot.rightScore}</div>
-              <div className="score">목표: {snapshot.targetScore}</div>
-            </div>
+            <GameCanvas snapshot={snapshot} />
             <div className="controls">
               <button type="button" onClick={() => sendInput('UP')}>
                 위로

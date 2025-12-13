@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.codexpong.backend.game.GameResultService;
 import com.codexpong.backend.game.domain.MatchType;
+import com.codexpong.backend.replay.ReplayService;
 import com.codexpong.backend.user.domain.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -27,7 +28,8 @@ class GameRoomServiceSpectatorTest {
     @DisplayName("관전자 한도가 초과되면 등록에 실패한다")
     void spectatorLimit() {
         GameResultService resultService = mock(GameResultService.class);
-        GameRoomService roomService = new GameRoomService(resultService, new ObjectMapper());
+        ReplayService replayService = mock(ReplayService.class);
+        GameRoomService roomService = new GameRoomService(resultService, replayService, new ObjectMapper());
 
         User left = new User("left", "pass", "왼쪽", null);
         User right = new User("right", "pass", "오른쪽", null);
