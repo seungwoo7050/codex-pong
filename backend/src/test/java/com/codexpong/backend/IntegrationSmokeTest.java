@@ -21,7 +21,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -73,11 +72,8 @@ class IntegrationSmokeTest {
         String payload = "ping-" + UUID.randomUUID();
 
         StandardWebSocketClient client = new StandardWebSocketClient();
-        WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
-        headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
-
         CompletableFuture<String> received = new CompletableFuture<>();
-        client.doHandshake(new TextWebSocketHandler() {
+        WebSocketSession session = client.doHandshake(new TextWebSocketHandler() {
             @Override
             public void afterConnectionEstablished(WebSocketSession session) throws Exception {
                 session.sendMessage(new TextMessage(payload));
@@ -87,10 +83,24 @@ class IntegrationSmokeTest {
             protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
                 received.complete(message.getPayload());
             }
-        }, headers, URI.create(String.format("ws://localhost:%d/ws/echo?token=%s", port, token))).get(5, TimeUnit.SECONDS);
+        }, null, URI.create(String.format("ws://localhost:%d/ws/echo?token=%s", port, token))).get(5, TimeUnit.SECONDS);
 
-        String echoed = received.get(5, TimeUnit.SECONDS);
-        Assertions.assertThat(echoed).contains(payload);
+        try {
+            String echoed = received.get(5, TimeUnit.SECONDS);
+            Assertions.assertThat(echoed).contains(payload);
+        } finally {
+            session.close();
+        }
+    }
+
+    @Test
+    void 토큰_없이_WebSocket_연결을_거부한다() {
+        StandardWebSocketClient client = new StandardWebSocketClient();
+
+        Assertions.assertThatThrownBy(() -> client.doHandshake(new TextWebSocketHandler() { },
+                        null, URI.create(String.format("ws://localhost:%d/ws/echo", port)))
+                .get(5, TimeUnit.SECONDS))
+                .isInstanceOf(Exception.class);
     }
 
     @Test

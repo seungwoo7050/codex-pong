@@ -5,6 +5,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,9 +19,16 @@ import org.springframework.context.annotation.Configuration;
  *   - design/backend/v0.10.0-kor-auth-and-locale.md
  * 변경 이력:
  *   - v0.10.0: Swagger UI 노출을 위한 기본 OpenAPI 설정 추가
+ *   - v0.10.0: 빌드 버전 정보를 이용해 OpenAPI 버전 정보를 자동 동기화
  */
 @Configuration
 public class OpenApiConfig {
+
+    private final BuildProperties buildProperties;
+
+    public OpenApiConfig(BuildProperties buildProperties) {
+        this.buildProperties = buildProperties;
+    }
 
     @Bean
     public OpenAPI codexPongOpenApi() {
@@ -30,7 +38,7 @@ public class OpenApiConfig {
                 .scheme("bearer")
                 .bearerFormat("JWT");
         return new OpenAPI()
-                .info(new Info().title("Codex Pong API").version("v0.10.0"))
+                .info(new Info().title("Codex Pong API").version("v" + buildProperties.getVersion()))
                 .components(new Components().addSecuritySchemes("BearerAuth", bearerAuth))
                 .addSecurityItem(new SecurityRequirement().addList("BearerAuth"));
     }
