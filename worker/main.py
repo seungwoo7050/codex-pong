@@ -1,23 +1,22 @@
 """
-[워커] worker/main.py
+[모듈] worker/main.py
 설명:
-  - v0.12.0 리플레이 내보내기 잡을 처리하는 Redis 스트림 기반 워커다.
-  - JSONL 리플레이를 파싱해 프레임을 렌더링하고 ffmpeg CLI로 MP4/PNG를 생성한다.
-  - GPU/WebGL 가속이 포함되는 v0.13.0 이후 스펙은 건드리지 않고, CPU 기반 렌더링만 수행한다.
-버전: v0.12.0
+  - v0.13.0에서 GPU 기반 FFmpeg 인코더를 우선 적용하되, 미지원 시 자동으로 CPU(libx264) 경로로 폴백한다.
+  - Redis Streams 잡 큐를 구독해 리플레이를 MP4/PNG로 변환하고, 지원 하드웨어 정보를 시작 시 로깅한다.
+버전: v0.13.0
 관련 설계문서:
-  - design/infra/v0.12.0-worker-and-queue-topology.md
-  - design/backend/v0.12.0-jobs-api-and-state-machine.md
+  - design/backend/v0.13.0-export-hw-accel-flags.md
 """
 
 import json
+import logging
 import os
 import subprocess
 import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable, List
+from typing import Callable, Iterable, List, Optional
 
 import redis
 from PIL import Image, ImageDraw, ImageFont
@@ -43,7 +42,64 @@ FRAME_INTERVAL_MS = int(1000 / FRAME_RATE)
 # Pillow를 선택한 이유: 도형 기반 렌더링만 필요해 외부 엔진 없이도 GameCanvas와 비슷한 형태를 유지할 수 있다.
 # 렌더링 해상도는 1280x720 고정이며, 게임 월드(800x480)를 중앙 정렬하고 비율이 깨지지 않도록 최소 배율로 스케일링한다.
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger("replay-worker")
+
 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+
+
+def detect_ffmpeg_capabilities() -> dict:
+    """ffmpeg이 제공하는 하드웨어 가속 관련 정보를 수집한다."""
+    result = {"encoders": [], "hwaccels": [], "decoders": []}
+    try:
+        enc_output = subprocess.check_output(["ffmpeg", "-hide_banner", "-encoders"], text=True, errors="ignore")
+        result["encoders"] = [
+            line.split()[1]
+            for line in enc_output.splitlines()
+            if any(tag in line for tag in ("nvenc", "qsv", "vaapi", "videotoolbox", "amf")) and len(line.split()) > 1
+        ]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("FFmpeg 인코더 목록 조회 실패: %s", exc)
+
+    try:
+        hw_output = subprocess.check_output(["ffmpeg", "-hide_banner", "-hwaccels"], text=True, errors="ignore")
+        result["hwaccels"] = [line.strip() for line in hw_output.splitlines() if line.strip() and not line.startswith("Hardware")]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("FFmpeg hwaccel 목록 조회 실패: %s", exc)
+
+    try:
+        dec_output = subprocess.check_output(["ffmpeg", "-hide_banner", "-decoders"], text=True, errors="ignore")
+        result["decoders"] = [
+            line.split()[1]
+            for line in dec_output.splitlines()
+            if any(tag in line for tag in ("h264", "hevc")) and len(line.split()) > 1
+        ]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("FFmpeg 디코더 목록 조회 실패: %s", exc)
+    return result
+
+
+def select_hw_encoder(capabilities: dict) -> Optional[str]:
+    """사용 가능한 하드웨어 인코더를 우선순위대로 선택한다."""
+    preferred = ["h264_nvenc", "h264_qsv", "h264_vaapi", "h264_videotoolbox", "h264_amf"]
+    for encoder in preferred:
+        if encoder in capabilities.get("encoders", []):
+            return encoder
+    return None
+
+
+def is_hw_enabled() -> bool:
+    return os.getenv("EXPORT_HW_ACCEL", "false").lower() == "true"
+
+
+FFMPEG_CAPABILITIES = detect_ffmpeg_capabilities()
+SELECTED_HW_ENCODER = select_hw_encoder(FFMPEG_CAPABILITIES)
+if SELECTED_HW_ENCODER:
+    logger.info(
+        "하드웨어 인코딩 감지: encoder=%s, hwaccel=%s", SELECTED_HW_ENCODER, ",".join(FFMPEG_CAPABILITIES.get("hwaccels", []))
+    )
+else:
+    logger.info("하드웨어 인코딩 인식 실패 또는 미지원: CPU(libx264)로 폴백 예정")
 
 
 class ReplayFormatError(Exception):
@@ -284,14 +340,15 @@ def calculate_expected_ms(events: List[ReplayEvent], duration_ms: int) -> int:
 
 
 def run_ffmpeg(job_id: str, output_path: Path, frames: Iterable[bytes], expected_ms: int,
-               phase: str, progress_cb: Callable[[str, int, str, str], None]) -> None:
+               phase: str, progress_cb: Callable[[str, int, str, str], None], encoder: str,
+               hwaccel: Optional[str] = None, filters: Optional[List[str]] = None) -> None:
     command = [
         "ffmpeg", "-y",
         "-f", "rawvideo", "-pix_fmt", "rgb24",
         "-s", f"{RENDER_WIDTH}x{RENDER_HEIGHT}",
         "-r", str(FRAME_RATE),
         "-i", "pipe:0",
-        "-c:v", "libx264",
+        "-c:v", encoder,
         "-pix_fmt", "yuv420p",
         "-movflags", "+faststart",
         "-f", "mp4",
@@ -299,6 +356,13 @@ def run_ffmpeg(job_id: str, output_path: Path, frames: Iterable[bytes], expected
         "-loglevel", "error",
         str(output_path),
     ]
+    if hwaccel:
+        command = ["ffmpeg", "-y", "-hwaccel", hwaccel, "-f", "rawvideo", "-pix_fmt", "rgb24",
+                   "-s", f"{RENDER_WIDTH}x{RENDER_HEIGHT}", "-r", str(FRAME_RATE), "-i", "pipe:0",
+                   "-c:v", encoder, "-pix_fmt", "yuv420p"]
+        if filters:
+            command.extend(["-vf", ",".join(filters)])
+        command.extend(["-movflags", "+faststart", "-f", "mp4", "-progress", "pipe:1", "-loglevel", "error", str(output_path)])
     progress_cb(job_id, 5, "PREPARE", "ffmpeg 준비 중")
     process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=False)
 
@@ -352,7 +416,8 @@ def run_ffmpeg(job_id: str, output_path: Path, frames: Iterable[bytes], expected
 
 def export_mp4(job_id: str, replay_id: str, options: dict,
                progress_cb: Callable[[str, int, str, str], None] = publish_progress,
-               result_cb: Callable[..., None] = publish_result) -> None:
+               result_cb: Callable[..., None] = publish_result,
+               ffmpeg_runner: Callable[..., None] = run_ffmpeg) -> None:
     try:
         output_path = validate_output_path(options.get("outputPath"))
     except OutputPathError as exc:
@@ -377,20 +442,48 @@ def export_mp4(job_id: str, replay_id: str, options: dict,
     expected_ms = calculate_expected_ms(events, duration_ms)
     tmp_path = output_path.with_name(output_path.name + ".tmp")
     tmp_path.unlink(missing_ok=True)
-    try:
+
+    def run_encode(encoder: str, hwaccel: Optional[str] = None, filters: Optional[List[str]] = None) -> None:
         frames = generate_frame_bytes(events, expected_ms)
-        run_ffmpeg(job_id, tmp_path, frames, expected_ms, "ENCODE", progress_cb)
+        ffmpeg_runner(job_id, tmp_path, frames, expected_ms, "ENCODE", progress_cb, encoder, hwaccel, filters)
+
+    hw_attempted = False
+    if is_hw_enabled() and SELECTED_HW_ENCODER:
+        hw_attempted = True
+        filters: Optional[List[str]] = None
+        hwaccel = None
+        if SELECTED_HW_ENCODER == "h264_vaapi":
+            hwaccel = "vaapi"
+            filters = ["format=nv12", "hwupload"]
+        elif SELECTED_HW_ENCODER == "h264_qsv":
+            hwaccel = "qsv"
+        elif SELECTED_HW_ENCODER == "h264_nvenc":
+            hwaccel = "cuda"
+        logger.info("하드웨어 인코딩 시도: encoder=%s, hwaccel=%s", SELECTED_HW_ENCODER, hwaccel or "none")
+        try:
+            run_encode(SELECTED_HW_ENCODER, hwaccel, filters)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("하드웨어 인코딩 실패, CPU 경로로 폴백: %s", exc)
+            tmp_path.unlink(missing_ok=True)
+
+    try:
+        if not tmp_path.exists():
+            run_encode("libx264")
         tmp_path.replace(output_path)
         checksum = checksum_file(output_path)
         result_cb(job_id, "SUCCEEDED", str(output_path), checksum)
     except RuntimeError as exc:
         tmp_path.unlink(missing_ok=True)
         output_path.unlink(missing_ok=True)
-        result_cb(job_id, "FAILED", error_code="FFMPEG_FAILED", error_message=str(exc))
+        code = "FFMPEG_FAILED_HW" if hw_attempted else "FFMPEG_FAILED"
+        result_cb(job_id, "FAILED", error_code=code, error_message=str(exc))
     except Exception as exc:  # noqa: BLE001
         tmp_path.unlink(missing_ok=True)
         output_path.unlink(missing_ok=True)
-        result_cb(job_id, "FAILED", error_code="WORKER_ERROR", error_message=str(exc))
+        code = "WORKER_ERROR"
+        if hw_attempted:
+            code = "WORKER_HW_FALLBACK_FAILED"
+        result_cb(job_id, "FAILED", error_code=code, error_message=str(exc))
 
 
 def export_thumbnail(job_id: str, replay_id: str, options: dict,
