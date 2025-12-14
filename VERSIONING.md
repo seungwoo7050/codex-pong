@@ -770,6 +770,10 @@ Make performance and async code quality explicitly demonstrable:
 
 ## 17. v1.0.0 – Portfolio-ready release
 
+**Status**
+
+- Portfolio-ready: v0.1.0~v0.14.0 기능을 안정화/문서화 완료.
+
 **Goal**
 
 Provide a **stable, well-documented** release suitable for portfolio use and technical discussions.
@@ -797,6 +801,13 @@ Provide a **stable, well-documented** release suitable for portfolio use and tec
     - Register → login → play → view stats.
     - Use social features → chat → join tournaments → spectate matches.
 - `VERSIONING.md` updated to clearly mark `v1.0.0` as **portfolio-ready**.
+
+**Known limitations**
+
+- OAuth 로그인은 프로필 조회 중심으로 구성되어 있으며, 실제 배포용 동의 화면/감사 로그는 최소화되어 있다.
+- 게임/관전 세션은 단일 백엔드 인스턴스 메모리 룸 관리에 의존한다. 다중 인스턴스 동기화/매치 브로커는 포함되지 않았다.
+- 채팅/소셜 모더레이션은 금칙어·뮤트/밴 수준이며, 신고/스팸 감지/자동 제재는 미구현이다.
+- 모니터링은 Prometheus/Grafana 샘플 대시보드 수준이고, 알림 채널 연동·SLO 기반 경보는 포함되지 않았다.
 
 ---
 
