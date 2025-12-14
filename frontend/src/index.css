@@ -127,6 +127,13 @@ input {
   gap: 12px;
 }
 
+/* 긴 리스트의 리플로우를 줄이기 위한 가상화 컨테이너 */
+.list.virtualized {
+  max-height: 540px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
 .list-item {
   border: 1px solid #1f2937;
   border-radius: 10px;
@@ -189,6 +196,12 @@ input {
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .grid-two {

@@ -37,7 +37,7 @@ describe('JobsPage', () => {
               ],
               page: 0,
               size: 20,
-              totalElements: 1,
+              totalItems: 1,
               totalPages: 1,
             }),
             { status: 200 },

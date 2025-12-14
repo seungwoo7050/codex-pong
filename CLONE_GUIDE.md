@@ -1,8 +1,8 @@
-# CLONE_GUIDE (v0.13.0)
+# CLONE_GUIDE (v0.14.0)
 
 ## 1. 목적
-- v0.13.0 기준 **GPU 옵션이 추가된 리플레이 내보내기 파이프라인**까지 포함한 전체 스택을 실행하기 위한 안내서다.
-- 기존 실시간 게임/소셜/토너먼트/관전/리플레이 뷰어 흐름에 더해, Redis Streams + 별도 워커로 MP4/썸네일을 생성하고 진행률을 WebSocket으로 확인한다.
+- v0.14.0 기준 **리플로우 제어 + WebSocket 비동기 패턴 + UTF-8 회귀 테스트**까지 포함한 전체 스택 실행/검증 안내서다.
+- 기존 실시간 게임/소셜/토너먼트/관전/리플레이/잡 파이프라인을 유지하면서, 프런트엔드 성능 캡처 절차와 WebSocket 재연결 정책, UTF-8 테스트를 최신화한다.
 - raw WebSocket(`/ws/*`) 전제를 유지한다. 전송 방식 변경 시 `design/realtime/initial-design.md` 및 본 문서를 함께 갱신한다.
 
 ## 2. 사전 준비물
@@ -128,14 +128,25 @@ npm install
 npm run build
 ```
 
-### 7.4 워커 테스트
+### 7.4 프런트엔드 성능 캡처 (리플로우 검증)
+```bash
+cd frontend
+npm install
+# Playwright 브라우저 설치가 네트워크로 실패할 수 있음 (샌드박스에서는 ERR_SOCKET_CLOSED 경고 가능)
+npx playwright install chromium || true
+node scripts/captureReflowTrace.js
+```
+- dev 서버는 8000 포트(`npm run dev -- --host --port 8000 --strictPort`)에서 실행해야 `captureReflowTrace`가 정상 접근한다.
+- 샌드박스에서 Chromium 다운로드가 막힐 경우 `browser_container.run_playwright_script`로 동일 스크립트를 실행하고, 생성된 `reports/performance/v0.14.0/*.zip`(로컬 생성물)을 DevTools로 확인한다. 저장소에는 바이너리 ZIP을 커밋하지 않는다.
+
+### 7.5 워커 테스트
 ```bash
 pip install -r worker/requirements.txt
 REQUIRE_FFMPEG=1 python -m unittest discover -s worker -p "test_*.py"
 ```
 - ffmpeg/ffprobe가 PATH에 없으면 실패하며, 테스트는 임시 디렉터리에서 MP4/PNG를 생성한 뒤 자동 정리한다.
 
-## 8. 버전별 메모 (v0.13.0)
-- 주요 기능: v0.12.0 기능에 더해 **WebGL 기본 + Canvas2D 폴백 리플레이 렌더러**, 워커의 **하드웨어 인코딩 옵션(EXPORT_HW_ACCEL)**이 추가되었다.
-- GPU 없이도 기본 CPU 경로로 모든 흐름이 동작하며, GPU 환경에서는 `EXPORT_HW_ACCEL=true` + 장치 노출(예: `--gpus all` 또는 `/dev/dri/renderD128` 마운트)로 속도 향상을 시험할 수 있다.
-- 리플레이 뷰어 하단에서 현재 렌더링 경로(WebGL/Canvas2D)와 개발용 FPS 기록을 확인할 수 있고, 워커는 시작 시 지원 HW 인코더를 로그로 남긴다.
+## 8. 버전별 메모 (v0.14.0)
+- 주요 기능: 리더보드/작업 목록 페이징 및 가상화, 잡 진행률 WebSocket 재시도 정책(3회 제한, 백오프), UTF-8 회귀 테스트 추가.
+- 성능 캡처: 7.4 절차로 `reports/performance/v0.14.0/` 경로에 로컬 생성하며, 바이너리 ZIP은 저장소에 포함하지 않는다(필요 시 직접 생성 후 DevTools에서 검토).
+- UTF-8 보증: `backend/src/test/java/com/codexpong/backend/Utf8RegressionTest.java`가 REST/DB/WebSocket 경로를 통합 검증하므로, 인코딩 설정 변경 시 반드시 재실행한다.

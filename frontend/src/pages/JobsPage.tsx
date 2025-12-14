@@ -9,13 +9,16 @@ import { JobPage, JobStatus, JobType } from '../shared/types/job'
  * 설명:
  *   - v0.12.0 리플레이 내보내기 잡 목록을 상태/유형별로 필터링하고 진행률을 확인한다.
  *   - 완료된 항목은 다운로드 링크, 실패 항목은 오류 메시지를 보여준다.
- * 버전: v0.12.0
+ * 버전: v0.14.0
  * 관련 설계문서:
  *   - design/frontend/v0.12.0-replay-export-and-jobs-ui.md
+ *   - design/frontend/v0.14.0-reflow-audit-and-fixes.md
  */
 export function JobsPage() {
   const { token } = useAuth()
   const [page, setPage] = useState<JobPage | null>(null)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageSize, setPageSize] = useState(20)
   const [statusFilter, setStatusFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [error, setError] = useState('')
@@ -27,8 +30,8 @@ export function JobsPage() {
     setLoading(true)
     fetchJobs(
       {
-        page: 0,
-        size: 20,
+        page: pageIndex,
+        size: pageSize,
         status: statusFilter || undefined,
         type: typeFilter || undefined,
       },
@@ -40,7 +43,11 @@ export function JobsPage() {
       })
       .catch(() => setError('잡 목록을 불러오는 중 오류가 발생했습니다.'))
       .finally(() => setLoading(false))
-  }, [token, statusFilter, typeFilter, refreshKey])
+  }, [token, statusFilter, typeFilter, refreshKey, pageIndex, pageSize])
+
+  useEffect(() => {
+    setPageIndex(0)
+  }, [statusFilter, typeFilter, pageSize])
 
   const statusOptions: JobStatus[] = ['QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELLED']
   const typeOptions: JobType[] = ['REPLAY_EXPORT_MP4', 'REPLAY_THUMBNAIL']
@@ -76,6 +83,16 @@ export function JobsPage() {
           <button type="button" className="secondary" onClick={() => setRefreshKey((prev) => prev + 1)}>
             새로고침
           </button>
+          <label>
+            페이지 크기
+            <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}>
+              {[10, 20, 50].map((size) => (
+                <option key={size} value={size}>
+                  {size}개씩 보기
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         {error && <p className="error">{error}</p>}
         {loading && <p>불러오는 중...</p>}
@@ -119,6 +136,24 @@ export function JobsPage() {
               ))}
             </tbody>
           </table>
+        )}
+        {page && page.totalPages > 0 && (
+          <div className="pager" aria-label="작업 목록 페이지 네비게이션">
+            <button type="button" className="secondary" disabled={pageIndex === 0} onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}>
+              이전
+            </button>
+            <span>
+              {pageIndex + 1} / {page.totalPages} (총 {page.totalItems}건)
+            </span>
+            <button
+              type="button"
+              className="secondary"
+              disabled={pageIndex + 1 >= page.totalPages}
+              onClick={() => setPageIndex((prev) => Math.min(page.totalPages - 1, prev + 1))}
+            >
+              다음
+            </button>
+          </div>
         )}
       </section>
     </main>
