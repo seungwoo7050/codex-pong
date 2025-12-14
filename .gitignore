@@ -48,3 +48,5 @@
 
 # 기타
 !.gitignore
+# 성능 캡처 아카이브(바이너리 ZIP)는 저장소에 포함하지 않음
+reports/performance/v0.14.0/*.zip

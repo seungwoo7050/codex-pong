@@ -713,7 +713,7 @@ Add hardware acceleration paths with strict CPU fallback:
 
 ## 16. v0.14.0 – Frontend reflow audit + async patterns hardening (portfolio-grade)
 
-**Status**: planned
+**Status**: completed
 
 **Goal**
 
@@ -760,6 +760,11 @@ Make performance and async code quality explicitly demonstrable:
   - `design/frontend/v0.14.0-reflow-audit-and-fixes.md`
   - `design/realtime/v0.14.0-async-ws-client-patterns.md`
   - `design/backend/v0.14.0-utf8-regression-suite.md`
+
+**Notes (v0.14.0 completion)**
+- 리더보드/작업 목록에 페이지네이션과 가상 리스트 스타일을 적용해 리플로우를 제어하고, before/after 트레이스를 `reports/performance/v0.14.0`에 저장했다.
+- 잡 진행률 WebSocket 클라이언트를 Promise/재시도 정책으로 통합하고, `useJobSocket`에서 상태 메시지를 일관되게 노출하도록 정리했다.
+- `Utf8RegressionTest`로 한글+이모지 닉네임이 REST/DB/WebSocket 경로에서 보존되는지 검증한다.
 
 ---
 
