@@ -664,7 +664,7 @@ Export a replay into downloadable artifacts without blocking the backend:
 
 ## 15. v0.13.0 – GPU-accelerated replay rendering + optional HW-encode export
 
-**Status**: planned
+**Status**: completed
 
 **Goal**
 
@@ -693,6 +693,11 @@ Add hardware acceleration paths with strict CPU fallback:
 - Infra:
   - Document local optional GPU setup (manual checklist, not required for CI).
   - Keep CI pipeline CPU-only.
+
+**Completion notes (v0.13.0)**
+- 리플레이 뷰어가 WebGL 기본 경로 + Canvas2D 폴백을 자동 전환하며, 개발 모드에서 1x/2x 평균 FPS를 기록한다.
+- 워커는 시작 시 FFmpeg 하드웨어 인코더 지원 여부를 로깅하고 `EXPORT_HW_ACCEL` 플래그로 HW 인코딩을 시도한 뒤 실패하면 CPU(libx264)로 폴백한다.
+- GPU 없이도 CI가 통과하도록 CPU 기본값을 유지하며, GPU 환경 체크리스트를 문서화했다.
 
 **Completion criteria**
 

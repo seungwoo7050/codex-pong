@@ -1,7 +1,7 @@
-# CLONE_GUIDE (v0.12.0)
+# CLONE_GUIDE (v0.13.0)
 
 ## 1. 목적
-- v0.12.0 기준 **리플레이 내보내기 잡 파이프라인**까지 포함한 전체 스택을 실행하기 위한 안내서다.
+- v0.13.0 기준 **GPU 옵션이 추가된 리플레이 내보내기 파이프라인**까지 포함한 전체 스택을 실행하기 위한 안내서다.
 - 기존 실시간 게임/소셜/토너먼트/관전/리플레이 뷰어 흐름에 더해, Redis Streams + 별도 워커로 MP4/썸네일을 생성하고 진행률을 WebSocket으로 확인한다.
 - raw WebSocket(`/ws/*`) 전제를 유지한다. 전송 방식 변경 시 `design/realtime/initial-design.md` 및 본 문서를 함께 갱신한다.
 
@@ -14,6 +14,7 @@
 - Node.js 18 (프런트엔드 로컬 실행 시)
 - JDK 17 (백엔드 로컬 실행 시)
 - ffmpeg CLI (로컬에서 워커를 단독 실행할 때 필요, Docker Compose 사용 시 자동 포함)
+- GPU 옵션 시험 시: NVIDIA(`nvidia-smi`), VAAPI(`/dev/dri/renderD128`) 등 장치 노출 여부를 사전 확인한다.
 
 ## 3. 클론 및 기본 구조
 ```bash
@@ -49,6 +50,7 @@ cd codex-pong
   - `REDIS_HOST`/`REDIS_PORT`
   - `JOB_QUEUE_REQUEST_STREAM`/`JOB_QUEUE_PROGRESS_STREAM`/`JOB_QUEUE_RESULT_STREAM`/`JOB_QUEUE_CONSUMER_GROUP`
   - `WORKER_ID` (로그 구분용)
+  - `EXPORT_HW_ACCEL` (선택, 기본 false): true로 설정 시 ffmpeg 하드웨어 인코더를 우선 시도하고 실패하면 CPU(libx264)로 자동 폴백한다.
 - 모든 컨테이너 기본 `TZ=Asia/Seoul`, DB 콜레이션 `utf8mb4_unicode_ci` 유지.
 
 ## 5. Docker Compose 실행
@@ -133,7 +135,7 @@ REQUIRE_FFMPEG=1 python -m unittest discover -s worker -p "test_*.py"
 ```
 - ffmpeg/ffprobe가 PATH에 없으면 실패하며, 테스트는 임시 디렉터리에서 MP4/PNG를 생성한 뒤 자동 정리한다.
 
-## 8. 버전별 메모 (v0.12.0)
-- 주요 기능: 기존 일반/랭크 대전, 리더보드, 친구/차단/초대, DM/로비/매치 채팅, 단일 제거 토너먼트, 관전 모드, 관리자 API/모니터링, 카카오/네이버 OAuth, KST/utf8mb4 정비, 리플레이 녹화/뷰어 + **잡 기반 리플레이 내보내기(MP4/썸네일) 및 진행률 WebSocket**.
-- 리플레이 내보내기 절차: 리플레이 뷰어 → 내보내기 버튼 클릭 → `jobId` 반환 → JobDrawer에서 실시간 진행률 확인 → 완료 후 다운로드. 워커는 JSONL 스냅샷을 직접 렌더링해 실제 경기 흐름이 반영된 MP4/PNG를 생성한다.
-- 큐/워커: Redis Streams(`job.requests/progress/results`) + `replay-worker` 컨테이너, ffmpeg CLI 필수. 데드레터 스트림 `job.deadletter`를 점검해 재시도할 수 있다. 출력 경로는 `JOB_EXPORT_PATH` 하위만 허용된다.
+## 8. 버전별 메모 (v0.13.0)
+- 주요 기능: v0.12.0 기능에 더해 **WebGL 기본 + Canvas2D 폴백 리플레이 렌더러**, 워커의 **하드웨어 인코딩 옵션(EXPORT_HW_ACCEL)**이 추가되었다.
+- GPU 없이도 기본 CPU 경로로 모든 흐름이 동작하며, GPU 환경에서는 `EXPORT_HW_ACCEL=true` + 장치 노출(예: `--gpus all` 또는 `/dev/dri/renderD128` 마운트)로 속도 향상을 시험할 수 있다.
+- 리플레이 뷰어 하단에서 현재 렌더링 경로(WebGL/Canvas2D)와 개발용 FPS 기록을 확인할 수 있고, 워커는 시작 시 지원 HW 인코더를 로그로 남긴다.

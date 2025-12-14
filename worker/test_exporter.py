@@ -131,6 +131,41 @@ class ExporterTest(unittest.TestCase):
             header = f.read(8)
         self.assertEqual(header, b"\x89PNG\r\n\x1a\n", "PNG 시그니처가 일치해야 합니다.")
 
+    def test_hw_encode_flag_falls_back_to_software(self) -> None:
+        input_path = self._write_sample_replay()
+        output_path = Path(self.temp_dir.name) / "exports" / "video.mp4"
+        result_logs: list = []
+        os.environ["EXPORT_HW_ACCEL"] = "true"
+        original_encoder = worker.SELECTED_HW_ENCODER
+        worker.SELECTED_HW_ENCODER = "h264_nvenc"
+
+        def fake_runner(job_id, target_path, frames, expected_ms, phase, progress_cb, encoder, hwaccel=None, filters=None):
+            # 첫 번째 호출(h264_nvenc)은 실패시키고, 두 번째 호출(libx264)은 성공 파일을 쓴다.
+            if encoder != "libx264":
+                raise RuntimeError("GPU 경로 실패")
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            target_path.write_bytes(b"ftypfallback")
+
+        try:
+            worker.export_mp4(
+                "job-hw-fallback",
+                "replay-x",
+                {
+                    "inputPath": str(input_path),
+                    "outputPath": str(output_path),
+                    "durationMs": "1000",
+                },
+                progress_cb=lambda *_args, **_kwargs: None,
+                result_cb=lambda *args, **_kwargs: result_logs.append(args),
+                ffmpeg_runner=fake_runner,
+            )
+        finally:
+            os.environ.pop("EXPORT_HW_ACCEL", None)
+            worker.SELECTED_HW_ENCODER = original_encoder
+
+        self.assertTrue(output_path.exists(), "HW 실패 후 CPU 폴백으로 파일을 남겨야 한다.")
+        self.assertTrue(any(log for log in result_logs if "SUCCEEDED" in log), "성공 로그가 기록돼야 한다.")
+
 
 if __name__ == "__main__":
     unittest.main()

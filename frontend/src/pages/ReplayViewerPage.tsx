@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthProvider'
 import { fetchReplayDetail, fetchReplayEvents } from '../features/replay/api'
 import { requestMp4Export, requestThumbnailExport, fetchJob } from '../features/jobs/api'
-import { GameCanvas } from '../shared/components/GameCanvas'
+import { ReplayRenderer } from '../shared/components/ReplayRenderer'
 import { JobDrawer } from '../shared/components/JobDrawer'
 import { JobSummary } from '../shared/types/job'
 import { ReplayDetail, ReplayEventRecord } from '../shared/types/replay'
@@ -12,12 +12,13 @@ import { useJobSocket, JobSocketEvent } from '../hooks/useJobSocket'
 /**
  * [페이지] frontend/src/pages/ReplayViewerPage.tsx
  * 설명:
- *   - v0.12.0 리플레이 뷰어는 JSONL 재생과 함께 MP4/썸네일 내보내기 잡 생성/모니터링 기능을 제공한다.
- *   - 실시간 게임에서 사용한 GameCanvas를 읽기 전용으로 재사용해 동일한 렌더링 결과를 유지한다.
- * 버전: v0.12.0
+ *   - v0.13.0 리플레이 뷰어는 WebGL → Canvas2D 자동 폴백 렌더러와 GPU/CPU 겸용 내보내기 트리거 UI를 제공한다.
+ *   - 개발 모드에서는 1x/2x 평균 FPS를 기록해 GPU 경로 확인에 활용한다.
+ * 버전: v0.13.0
  * 관련 설계문서:
  *   - design/frontend/v0.11.0-replay-browser-and-viewer.md
  *   - design/frontend/v0.12.0-replay-export-and-jobs-ui.md
+ *   - design/frontend/v0.13.0-webgl-replay-renderer.md
  */
 export function ReplayViewerPage() {
   const { replayId } = useParams()
@@ -31,7 +32,9 @@ export function ReplayViewerPage() {
   const [jobError, setJobError] = useState('')
   const [activeJob, setActiveJob] = useState<JobSummary | null>(null)
   const [jobLogs, setJobLogs] = useState<string[]>([])
+  const [fpsInfo, setFpsInfo] = useState<{ [key: string]: number }>({})
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const fpsStatRef = useRef<{ [key: string]: { start: number; frames: number } }>({})
 
   const durationMs = detail?.summary.durationMs ?? 0
 
@@ -161,6 +164,28 @@ export function ReplayViewerPage() {
       .catch(() => setJobError('잡 상태를 불러오지 못했습니다.'))
   }
 
+  useEffect(() => {
+    if (!playing) return
+    if (speed !== 1 && speed !== 2) return
+    const key = `${speed}x`
+    const now = performance.now()
+    const stat = fpsStatRef.current[key] ?? { start: now, frames: 0 }
+    if (stat.start === 0) {
+      stat.start = now
+    }
+    stat.frames += 1
+    fpsStatRef.current[key] = stat
+    const elapsed = now - stat.start
+    if (elapsed > 0) {
+      const avg = (stat.frames / elapsed) * 1000
+      setFpsInfo((prev) => ({ ...prev, [key]: Math.round(avg * 10) / 10 }))
+      if (import.meta.env.DEV && stat.frames % 60 === 0) {
+        // 개발용 콘솔 로깅으로 GPU 경로를 빠르게 점검한다.
+        console.debug(`[replay-fps] ${key}: ${avg.toFixed(1)} fps`)
+      }
+    }
+  }, [playing, positionMs, speed])
+
   return (
     <main className="page">
       <section className="panel">
@@ -187,7 +212,12 @@ export function ReplayViewerPage() {
         {!currentSnapshot && !error && <p className="hint">이벤트를 불러오는 중...</p>}
         {currentSnapshot && (
           <div className="game-area">
-            <GameCanvas snapshot={currentSnapshot} />
+            <ReplayRenderer snapshot={currentSnapshot} />
+            <div className="scoreboard">
+              <div>왼쪽: {currentSnapshot.leftScore}</div>
+              <div>오른쪽: {currentSnapshot.rightScore}</div>
+              <div>목표: {currentSnapshot.targetScore}</div>
+            </div>
             <div className="controls">
               <button type="button" onClick={togglePlay}>
                 {playing ? '일시정지' : '재생'}
@@ -214,6 +244,11 @@ export function ReplayViewerPage() {
                 목록으로
               </Link>
             </div>
+            {import.meta.env.DEV && (
+              <div className="hint">
+                <p>개발용 FPS 기록: 1x {fpsInfo['1x'] ?? '-'} / 2x {fpsInfo['2x'] ?? '-'}</p>
+              </div>
+            )}
           </div>
         )}
       </section>
